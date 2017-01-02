@@ -11,7 +11,6 @@ main.obj: C:/ti/ccsv6/tools/compiler/msp430_15.12.3.LTS/include/math.h
 main.obj: C:/ti/ccsv6/tools/compiler/msp430_15.12.3.LTS/include/linkage.h
 main.obj: C:/ti/ccsv6/tools/compiler/msp430_15.12.3.LTS/include/_defs.h
 main.obj: C:/Users/Marvin/Documents/GitHub/BMI160_Complete/BMI160.h
-main.obj: C:/Users/Marvin/Documents/GitHub/BMI160_Complete/MadgwickAHRS.h
 
 ../main.c: 
 C:/Users/Marvin/Documents/GitHub/BMI160_Complete/main.h: 
@@ -24,4 +23,3 @@ C:/ti/ccsv6/tools/compiler/msp430_15.12.3.LTS/include/math.h:
 C:/ti/ccsv6/tools/compiler/msp430_15.12.3.LTS/include/linkage.h: 
 C:/ti/ccsv6/tools/compiler/msp430_15.12.3.LTS/include/_defs.h: 
 C:/Users/Marvin/Documents/GitHub/BMI160_Complete/BMI160.h: 
-C:/Users/Marvin/Documents/GitHub/BMI160_Complete/MadgwickAHRS.h: 

@@ -1,0 +1,16 @@
+Register 0x1b (status)
+ -> Bit 6 -> Gyro Data ready in register
+ -> Data ready interrupt auf int2 
+ 
+ If int2 -> get gyro data 
+ So lange bis gyro wieder schläft
+ 
+gyro wacht auf wenn beschleunigungsänderung vom acc über 
+th gemessen wird.
+	-> hochfahren
+	-> mit 50Hz messen 
+	Acc detektiert keine Änderung mehr über Thresholt
+
+	Gyro Aufwachzeit 60.26ms
+	
+	madgwick algorithm too slow-> 80ms p/convertation

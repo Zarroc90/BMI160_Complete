@@ -12,7 +12,7 @@
 #include <msp430.h>
 #include <math.h>
 #include <BMI160.h>
-#include <MadgwickAHRS.h>
+//#include <MadgwickAHRS.h>
 
 #define rxIDLE 	0x00
 #define rxSOF 	0x01
@@ -36,9 +36,10 @@
 #define txMZ 	0xA8
 #define txRoll	0xA9
 #define txPitch	0xAA
-#define txPosX  0xAB
-#define txPosY  0xAC
-#define txPosZ  0xAD
+#define txYaw	0xAB
+#define txPosX  0xAC
+#define txPosY  0xAD
+#define txPosZ  0xAE
 
 int test_0,test_1,test_2,test_3;
 unsigned char rx_REC = 0, rx_State = rxIDLE, rx_CRC = 0, rx_CMD = 0, rx_LEN = 0, rec_LEN = 0, rxPackArray[255],rx_ACK=0,uart_rx_received=0;
@@ -64,6 +65,7 @@ enum result_type{
 	mz_type,
 	roll_type,
 	pitch_type,
+	yaw_type,
 	posX_type,
 	posY_type,
 	posZ_type
@@ -76,7 +78,7 @@ enum result_type{
 #define CS_2	BIT2
 
 
-int sensor,read;
+int sensor,read=0,timer=0,timer_count=0,nomotion_gyro_counter=0;
 int accelorameter_raw[3];
 int gyroscope_raw[3];
 int magnetometer_raw[3];
@@ -85,9 +87,10 @@ int MagID;
 //float aRes;
 //float gRes;
 //float mRes;
-float ax,ay,az,gx,gy,gz/*,mx,my,mz*/;
-float pitch,roll,yaw/*,pax,pay,paz*/;
+float ax=0,ay,az,gx,gy,gz/*,mx,my,mz*/;
+float pitch,roll,yaw=0,g_Rate=0,gz_offset=0/*,pax,pay,paz*/;
 float temperature;
+unsigned char roll_char[2],pitch_char[2],yaw_char[2],ax_char[2],ay_char[2],az_char[2];
 //unsigned char ax_char[2],ay_char[2],az_char[2],gx_char[2],gy_char[2],gz_char[2],mx_char[2],my_char[2],mz_char[2],roll_char[2],pitch_char[2],posX_char[2],direction,countx,county;
 //long sstatex,sstatey,sstatez;
 //signed long velocityx[2],velocityy[2],positionX[2],positionY[2];
@@ -95,8 +98,8 @@ float temperature;
 
 
 
-//void Float_to_Char_array(float value,enum result_type type);
-//void String_number_rightify(float number, char *str);
+void Float_to_Char_array(float value,enum result_type type);
+void String_number_rightify(float number, char *str);
 void Init();
 
 void Init_BMI160();
