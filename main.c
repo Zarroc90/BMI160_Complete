@@ -76,18 +76,10 @@ int main(void) {
 				//ax = accelorameter_raw[0] * aRes * 1000;		//*aRes*1000;
 				ay = accelorameter_raw[1] * aRes * 1000;		//*aRes*1000;
 				//az = accelorameter_raw[2] * aRes;				//*aRes*1000;
-				Read_Gyroscope(gyroscope_raw);
+
 				gz = gyroscope_raw[2];
 				g_Rate = (gz - gz_offset) * gRes;
 				yaw += g_Rate / 50.0f;
-
-				if (ay>= ax){
-					ax=ay;
-				}
-
-				if (ay >= 400.0f) {
-													yaw = 0;
-												}
 
 				if (((gz <= (gz_offset + 1)) && (gz >= (gz_offset - 1)))
 						&& timer == 0) {//gz is near offset (in nomotion) and not longer active then timer
@@ -114,7 +106,7 @@ int main(void) {
 
 				 yaw = atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3);
 				 */
-				Float_to_Char_array(ax, ay_type);
+				Float_to_Char_array(ay, ay_type);
 				Uart_TransmitTxPack(txAY, ay_char, 2);
 				//Float_to_Char_array(roll, roll_type);
 				//Float_to_Char_array(pitch, pitch_type);
@@ -404,9 +396,9 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x15);			//Start Gyro
 	__delay_cycles(1600000);
 
-	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x95);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 12,5Hz
+	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x99);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 12,5Hz
 	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_RANGE_ADDR, 0x05);//ACC Range 0x03 -> 2g, 0x05 -> 4g, 0x08 ->8g
-	SPI_Write(BMI160_AG, BMI160_USER_GYRO_CONFIG_ADDR, 0x27);//Gyro Config 2 8 -> 50Hz
+	SPI_Write(BMI160_AG, BMI160_USER_GYRO_CONFIG_ADDR, 0x27);//Gyro Config 2 8 -> 100Hz
 	SPI_Write(BMI160_AG, BMI160_USER_GYRO_RANGE_ADDR, 0x00);//Gyro Range: 2000°/s
 
 	//Get Offset
@@ -421,10 +413,11 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_1_ADDR, 0x02);	//anymotion Threshold = 3 *grange(7.81mg) sample to sample difference
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_2_ADDR, 0x01);	//nomotion Threshold = 2 *grange(7.81mg) sample to sample difference
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_3_ADDR, 0x01);	//no motion config
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_4_ADDR, 0x28); //High g Threshold 75%
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_0_ADDR, 0x07);	//Enable Any Motion Interrupt on all 3 Acc axis
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_1_ADDR, 0x10);	//Enable Data ready interrupt
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_1_ADDR, 0x12);	//Enable Data ready + High g on Y axis interrupt
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_2_ADDR, 0x07);	//Enable noMotion Interrupt on all 3 Acc axis
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x04);//Interrupt anymotion MAP to Int 1
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x02);//Interrupt High G MAP to Int 1
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_1_ADDR, 0x08);//Interrupt data ready MAP to Int 2
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_OUT_CTRL_ADDR, 0xAA);	//Interrupt 1&2 Enable + Active High
 
@@ -599,7 +592,7 @@ char PackCRC(unsigned char *s, unsigned char length) {
 	return c;
 }
 
-#pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold
+#pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold -> Window close/Broke
 __interrupt void Port_1(void) {
 
 	//MPU9250
@@ -610,7 +603,7 @@ __interrupt void Port_1(void) {
 	//BMX055 & BMI160
 	P1IFG &= ~BIT3;										//Clear Interrupt Flag
 	//P1IE &= ~BIT3;											//P1.3 Interrupt disabled
-	read = 1;
+	yaw = 0;
 	LPM3_EXIT;
 }
 
@@ -632,6 +625,7 @@ __interrupt void Port_2(void) {
 			timer = 1;
 		}
 		read = 2;											//Gyro measurement
+		Read_Gyroscope(gyroscope_raw);
 		//P1IE &= ~BIT3;									//disable interrupt anymotion
 	}
 	if ((SPI_Read(BMI160_AG, BMI160_USER_PMU_STAT_ADDR) & 0x0C) == 0x00) { //Gyro Suspend Mode
