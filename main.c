@@ -60,7 +60,7 @@ int main(void) {
 		switch (sensor) {
 
 		case BMI160: {
-			//whoami=SPI_Read(CS_0,0x00);							//0xD1
+			whoami=SPI_Read(CS_0,0x00);							//0xD1
 			//test_0=SPI_Read(BMI160_AG,BMI160_USER_PMU_STAT_ADDR);
 			//test_1=SPI_Read(BMI160_AG,BMI160_USER_INTR_ENABLE_0_ADDR);
 			/*if (read == 1) {									//if anymotion
@@ -387,6 +387,11 @@ void Init_BMI160() {
 	 __delay_cycles(10000);
 	 SPI_Write(BMI160_AG,BMI160_CMD_COMMANDS_ADDR,0x15);			//Start Gyro
 	 */
+
+	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB6);			//softreset
+	__delay_cycles(3200000);
+	whoami = SPI_Read(CS_0, 0x00);
+
 
 	//-----------LOW Power Mode----------------
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB6);			//softreset
