@@ -78,7 +78,7 @@ enum result_type{
 #define CS_2	BIT2
 
 
-int sensor,read=0,timer=0,timer_count=0,nomotion_gyro_counter=0;
+int sensor,read=0,timer=0,timer_count=0,nomotion_gyro_counter=0,Z_Calibrate=4,X_Calibrate=0, Y_Calibrate=2;
 int accelorameter_raw[3];
 int gyroscope_raw[3];
 int magnetometer_raw[3];
@@ -88,7 +88,7 @@ int MagID;
 //float gRes;
 //float mRes;
 float ax=0,ay,az,gx,gy,gz/*,mx,my,mz*/;
-float pitch,roll,yaw=0,g_Rate=0,gz_offset=0/*,pax,pay,paz*/;
+float pitch,roll,yaw=0,g_Rate=0,gz_offset=0,pax,pay,paz;
 float temperature;
 unsigned char roll_char[2],pitch_char[2],yaw_char[2],ax_char[2],ay_char[2],az_char[2];
 //unsigned char ax_char[2],ay_char[2],az_char[2],gx_char[2],gy_char[2],gz_char[2],mx_char[2],my_char[2],mz_char[2],roll_char[2],pitch_char[2],posX_char[2],direction,countx,county;
@@ -113,7 +113,7 @@ char SPI_Read (char cs_signal,char reg);
 void Uart_putchar(char c);
 void Uart_TransmitTxPack(char cmd,unsigned char* data, unsigned char length);
 char PackCRC(unsigned char *s, unsigned char length);
-
+void Initialization();
 
 
 #endif /* MAIN_H_ */

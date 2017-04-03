@@ -15,4 +15,5 @@ th gemessen wird.
 	
 	madgwick algorithm too slow-> 80ms p/convertation
 
-Initmodus -> Fenster 3x auf und zu machen um den sensor zu kalibrieren. 
+Initmodus -> Fenster 3x auf und zu machen um den sensor zu kalibrieren.
+ -> Beschleunigung beim schließen 

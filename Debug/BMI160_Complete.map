@@ -1,10 +1,10 @@
 ******************************************************************************
                   MSP430 Linker PC v15.12.3                    
 ******************************************************************************
->> Linked Thu Mar 30 11:12:57 2017
+>> Linked Mon Apr 03 14:29:00 2017
 
 OUTPUT FILE NAME:   <BMI160_Complete.out>
-ENTRY POINT SYMBOL: "_c_int00_noargs_noexit"  address: 0000cd88
+ENTRY POINT SYMBOL: "_c_int00_noargs_noexit"  address: 0000d71e
 
 
 MEMORY CONFIGURATION
@@ -14,12 +14,12 @@ MEMORY CONFIGURATION
   SFR                   00000000   00000010  00000000  00000010  RWIX
   PERIPHERALS_8BIT      00000010   000000f0  00000000  000000f0  RWIX
   PERIPHERALS_16BIT     00000100   00000100  00000000  00000100  RWIX
-  RAM                   00000200   00000200  00000199  00000067  RWIX
+  RAM                   00000200   00000200  000001a5  0000005b  RWIX
   INFOD                 00001000   00000040  00000000  00000040  RWIX
   INFOC                 00001040   00000040  00000000  00000040  RWIX
   INFOB                 00001080   00000040  00000000  00000040  RWIX
   INFOA                 000010c0   00000040  00000000  00000040  RWIX
-  FLASH                 0000c000   00003fde  00000e80  0000315e  RWIX
+  FLASH                 0000c000   00003fde  0000185c  00002782  RWIX
   BSLSIGNATURE          0000ffde   00000002  00000002  00000000  RWIX  ffff 
   INT00                 0000ffe0   00000002  00000002  00000000  RWIX
   INT01                 0000ffe2   00000002  00000000  00000002  RWIX
@@ -44,76 +44,90 @@ SECTION ALLOCATION MAP
  output                                  attributes/
 section   page    origin      length       input sections
 --------  ----  ----------  ----------   ----------------
-.bss       0    00000200    00000129     UNINITIALIZED
+.bss       0    00000200    0000012d     UNINITIALIZED
                   00000200    00000100     (.common:rxPackArray)
                   00000300    00000006     (.common:accelorameter_raw)
                   00000306    00000006     (.common:gyroscope_raw)
                   0000030c    00000004     (.common:ay)
                   00000310    00000004     (.common:az)
                   00000314    00000004     (.common:gz)
-                  00000318    00000002     (.common:ax_char)
-                  0000031a    00000002     (.common:ay_char)
-                  0000031c    00000002     (.common:az_char)
-                  0000031e    00000002     (.common:pitch_char)
-                  00000320    00000002     (.common:roll_char)
-                  00000322    00000002     (.common:sensor)
-                  00000324    00000002     (.common:whoami)
-                  00000326    00000002     (.common:yaw_char)
-                  00000328    00000001     (.common:received_ch)
+                  00000318    00000004     (.common:pitch)
+                  0000031c    00000002     (.common:ax_char)
+                  0000031e    00000002     (.common:ay_char)
+                  00000320    00000002     (.common:az_char)
+                  00000322    00000002     (.common:pitch_char)
+                  00000324    00000002     (.common:roll_char)
+                  00000326    00000002     (.common:sensor)
+                  00000328    00000002     (.common:whoami)
+                  0000032a    00000002     (.common:yaw_char)
+                  0000032c    00000001     (.common:received_ch)
 
-.data      0    0000032a    00000020     UNINITIALIZED
-                  0000032a    00000020     main.obj (.data)
+.data      0    0000032e    00000028     UNINITIALIZED
+                  0000032e    00000026     main.obj (.data)
+                  00000354    00000002     rts430_eabi.lib : errno.obj (.data)
 
 .stack     0    000003b0    00000050     UNINITIALIZED
                   000003b0    00000002     rts430_eabi.lib : boot.obj (.stack)
                   000003b2    0000004e     --HOLE--
 
-.text      0    0000c000    00000e5e     
-                  0000c000    00000248     main.obj (.text:main)
-                  0000c248    0000023c     main.obj (.text:Init_BMI160)
-                  0000c484    00000132     rts430_eabi.lib : fs_add.obj (.text)
-                  0000c5b6    000000c4                     : fs_mpy.obj (.text)
-                  0000c67a    000000a0     main.obj (.text:Read_Accelorameter)
-                  0000c71a    000000a0     main.obj (.text:Read_Gyroscope)
-                  0000c7ba    000000a0     main.obj (.text:Uart_TransmitTxPack)
-                  0000c85a    0000009c     rts430_eabi.lib : fs_div.obj (.text)
-                  0000c8f6    0000008e     main.obj (.text:USCI0RX_ISR)
-                  0000c984    00000086     main.obj (.text:Init)
-                  0000ca0a    00000080     main.obj (.text:Float_to_Char_array)
-                  0000ca8a    0000007c     main.obj (.text:Port_2)
-                  0000cb06    0000006e     rts430_eabi.lib : autoinit.obj (.text:_auto_init)
-                  0000cb74    00000068                     : fs_toi.obj (.text)
-                  0000cbdc    00000064                     : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
-                  0000cc40    0000005a                     : cpy_tbl.obj (.text:copy_in)
-                  0000cc9a    0000004a                     : fs_cmp.obj (.text)
-                  0000cce4    00000048     main.obj (.text:SPI_Transceive)
-                  0000cd2c    00000036     rts430_eabi.lib : fs_itof.obj (.text)
-                  0000cd62    00000026     main.obj (.text:Timer_A)
-                  0000cd88    0000001a     rts430_eabi.lib : boot_special.obj (.text:_c_int00_noargs_noexit)
-                  0000cda2    00000018     main.obj (.text:Uart_putchar)
-                  0000cdba    00000016     main.obj (.text:PackCRC)
-                  0000cdd0    00000014     main.obj (.text:Port_1)
-                  0000cde4    00000014     rts430_eabi.lib : mult16.obj (.text)
-                  0000cdf8    00000012     main.obj (.text:SPI_Read)
-                  0000ce0a    00000012     rts430_eabi.lib : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
-                  0000ce1c    00000012                     : memcpy.obj (.text:memcpy)
-                  0000ce2e    00000010                     : epilog.obj (.text)
-                  0000ce3e    00000008                     : isr_trap.obj (.text:_isr:__TI_ISR_TRAP)
-                  0000ce46    00000006     main.obj (.text:SPI_Write)
-                  0000ce4c    00000006     rts430_eabi.lib : exit.obj (.text:abort)
-                  0000ce52    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
-                  0000ce58    00000004                     : pre_init.obj (.text:_system_pre_init)
-                  0000ce5c    00000002                     : startup.obj (.text:_system_post_cinit)
-
-.cinit     0    0000ce5e    00000022     
-                  0000ce5e    0000000b     (.cinit..bss.load) [load image, compression = rle]
-                  0000ce69    00000001     --HOLE-- [fill = 0]
-                  0000ce6a    00000009     (.cinit..data.load) [load image, compression = rle]
-                  0000ce73    00000001     --HOLE-- [fill = 0]
-                  0000ce74    00000004     (__TI_handler_table)
-                  0000ce78    00000008     (__TI_cinit_table)
+.text      0    0000c000    000017fe     
+                  0000c000    000003cc     main.obj (.text:main)
+                  0000c3cc    00000276     rts430_eabi.lib : s_atanf.obj (.text:atanf)
+                  0000c642    00000240     main.obj (.text:Init_BMI160)
+                  0000c882    00000240     rts430_eabi.lib : e_atan2f.obj (.text:atan2f)
+                  0000cac2    00000148     main.obj (.text:Initialization)
+                  0000cc0a    0000013c     rts430_eabi.lib : e_sqrtf.obj (.text:sqrtf)
+                  0000cd46    00000132                     : fs_add.obj (.text)
+                  0000ce78    000000de     main.obj (.text:Read_Accelorameter)
+                  0000cf56    000000de     main.obj (.text:Read_Gyroscope)
+                  0000d034    000000c4     rts430_eabi.lib : fs_mpy.obj (.text)
+                  0000d0f8    000000a0     main.obj (.text:Uart_TransmitTxPack)
+                  0000d198    0000009c     rts430_eabi.lib : fs_div.obj (.text)
+                  0000d234    0000008e     main.obj (.text:USCI0RX_ISR)
+                  0000d2c2    00000086     main.obj (.text:Init)
+                  0000d348    00000080     main.obj (.text:Float_to_Char_array)
+                  0000d3c8    0000007c     main.obj (.text:Port_2)
+                  0000d444    0000006e     rts430_eabi.lib : autoinit.obj (.text:_auto_init)
+                  0000d4b2    00000068                     : fs_toi.obj (.text)
+                  0000d51a    00000064                     : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
+                  0000d57e    0000005a                     : cpy_tbl.obj (.text:copy_in)
+                  0000d5d8    0000004a                     : fs_cmp.obj (.text)
+                  0000d622    00000048     main.obj (.text:SPI_Transceive)
+                  0000d66a    00000036     rts430_eabi.lib : fs_itof.obj (.text)
+                  0000d6a0    0000002c                     : asr16.obj (.text)
+                  0000d6cc    0000002c                     : lsl16.obj (.text)
+                  0000d6f8    00000026     main.obj (.text:Timer_A)
+                  0000d71e    0000001a     rts430_eabi.lib : boot_special.obj (.text:_c_int00_noargs_noexit)
+                  0000d738    00000018     main.obj (.text:Uart_putchar)
+                  0000d750    00000016     main.obj (.text:PackCRC)
+                  0000d766    00000014     main.obj (.text:Port_1)
+                  0000d77a    00000014     rts430_eabi.lib : mult16.obj (.text)
+                  0000d78e    00000012     main.obj (.text:SPI_Read)
+                  0000d7a0    00000012     rts430_eabi.lib : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
+                  0000d7b2    00000012                     : memcpy.obj (.text:memcpy)
+                  0000d7c4    00000010                     : epilog.obj (.text)
+                  0000d7d4    0000000a                     : fs_neg.obj (.text)
+                  0000d7de    00000008                     : isr_trap.obj (.text:_isr:__TI_ISR_TRAP)
+                  0000d7e6    00000006     main.obj (.text:SPI_Write)
+                  0000d7ec    00000006     rts430_eabi.lib : exit.obj (.text:abort)
+                  0000d7f2    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
+                  0000d7f8    00000004                     : pre_init.obj (.text:_system_pre_init)
+                  0000d7fc    00000002                     : startup.obj (.text:_system_post_cinit)
 
 .binit     0    0000c000    00000000     
+
+.const     0    0000d7fe    00000034     
+                  0000d7fe    00000014     rts430_eabi.lib : s_atanf.obj (.const:aT)
+                  0000d812    00000010                     : s_atanf.obj (.const:atanhi)
+                  0000d822    00000010                     : s_atanf.obj (.const:atanlo)
+
+.cinit     0    0000d832    0000002a     
+                  0000d832    00000011     (.cinit..data.load) [load image, compression = rle]
+                  0000d843    00000001     --HOLE-- [fill = 0]
+                  0000d844    0000000b     (.cinit..bss.load) [load image, compression = rle]
+                  0000d84f    00000001     --HOLE-- [fill = 0]
+                  0000d850    00000004     (__TI_handler_table)
+                  0000d854    00000008     (__TI_cinit_table)
 
 .init_array 
 *          0    0000c000    00000000     UNINITIALIZED
@@ -121,14 +135,14 @@ section   page    origin      length       input sections
 TRAPINT    0    0000ffe0    00000002     
                   0000ffe0    00000002     rts430_eabi.lib : int00.obj (.int00)
 
-$fill000   0    0000ffde    00000002     
-                  0000ffde    00000002     --HOLE-- [fill = ffff]
-
 PORT1      0    0000ffe4    00000002     
                   0000ffe4    00000002     main.obj (.int02)
 
 PORT2      0    0000ffe6    00000002     
                   0000ffe6    00000002     main.obj (.int03)
+
+$fill000   0    0000ffde    00000002     
+                  0000ffde    00000002     --HOLE-- [fill = ffff]
 
 ADC10      0    0000ffea    00000002     
                   0000ffea    00000002     rts430_eabi.lib : int05.obj (.int05)
@@ -175,11 +189,14 @@ MODULE SUMMARY
        Module                     code   ro data   rw data
        ------                     ----   -------   -------
     .\
-       main.obj                   2364   8         329    
+       main.obj                   3208   8         339    
     +--+--------------------------+------+---------+---------+
-       Total:                     2364   8         329    
+       Total:                     3208   8         339    
                                                           
     C:\ti\ccsv6\tools\compiler\msp430_15.12.3.LTS\lib\rts430_eabi.lib
+       s_atanf.obj                630    52        0      
+       e_atan2f.obj               576    0         0      
+       e_sqrtf.obj                316    0         0      
        fs_add.obj                 306    0         0      
        fs_mpy.obj                 196    0         0      
        fs_div.obj                 156    0         0      
@@ -189,15 +206,19 @@ MODULE SUMMARY
        cpy_tbl.obj                90     0         0      
        fs_cmp.obj                 74     0         0      
        fs_itof.obj                54     0         0      
+       asr16.obj                  44     0         0      
+       lsl16.obj                  44     0         0      
        boot_special.obj           26     0         0      
        mult16.obj                 20     0         0      
        copy_decompress_none.obj   18     0         0      
        memcpy.obj                 18     0         0      
        epilog.obj                 16     0         0      
+       fs_neg.obj                 10     0         0      
        isr_trap.obj               8      0         0      
        exit.obj                   6      0         0      
        pre_init.obj               4      0         0      
        boot.obj                   0      2         0      
+       errno.obj                  0      0         2      
        int00.obj                  0      2         0      
        int05.obj                  0      2         0      
        int06.obj                  0      2         0      
@@ -209,24 +230,24 @@ MODULE SUMMARY
        int14.obj                  0      2         0      
        startup.obj                2      0         0      
     +--+--------------------------+------+---------+---------+
-       Total:                     1314   20        0      
+       Total:                     2934   72        2      
                                                           
        Stack:                     0      0         80     
-       Linker Generated:          0      32        0      
+       Linker Generated:          0      40        0      
     +--+--------------------------+------+---------+---------+
-       Grand Total:               3678   60        409    
+       Grand Total:               6142   120       421    
 
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 0000ce78 records: 2, size/record: 4, table size: 8
-	.bss: load addr=0000ce5e, load size=0000000b bytes, run addr=00000200, run size=00000129 bytes, compression=rle
-	.data: load addr=0000ce6a, load size=00000009 bytes, run addr=0000032a, run size=00000020 bytes, compression=rle
+__TI_cinit_table @ 0000d854 records: 2, size/record: 4, table size: 8
+	.data: load addr=0000d832, load size=00000011 bytes, run addr=0000032e, run size=00000028 bytes, compression=rle
+	.bss: load addr=0000d844, load size=0000000b bytes, run addr=00000200, run size=0000012d bytes, compression=rle
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 0000ce74 records: 2, size/record: 2, table size: 4
+__TI_handler_table @ 0000d850 records: 2, size/record: 2, table size: 4
 	index: 0, handler: __TI_decompress_rle24
 	index: 1, handler: __TI_decompress_none
 
@@ -245,7 +266,7 @@ address   name
 00000057  BCSCTL1                 
 00000058  BCSCTL2                 
 00000053  BCSCTL3                 
-0000ce4c  C$$EXIT                 
+0000d7ec  C$$EXIT                 
 00000059  CACTL1                  
 0000005a  CACTL2                  
 000010fb  CALBC1_12MHZ            
@@ -261,13 +282,14 @@ address   name
 00000128  FCTL1                   
 0000012a  FCTL2                   
 0000012c  FCTL3                   
-0000ca0a  Float_to_Char_array     
+0000d348  Float_to_Char_array     
 00000000  IE1                     
 00000001  IE2                     
 00000002  IFG1                    
 00000003  IFG2                    
-0000c984  Init                    
-0000c248  Init_BMI160             
+0000d2c2  Init                    
+0000c642  Init_BMI160             
+0000cac2  Initialization          
 00000022  P1DIR                   
 00000025  P1IE                    
 00000024  P1IES                   
@@ -292,14 +314,14 @@ address   name
 00000010  P3REN                   
 0000001b  P3SEL                   
 00000043  P3SEL2                  
-0000cdba  PackCRC                 
-0000cdd0  Port_1                  
-0000ca8a  Port_2                  
-0000c67a  Read_Accelorameter      
-0000c71a  Read_Gyroscope          
-0000cdf8  SPI_Read                
-0000cce4  SPI_Transceive          
-0000ce46  SPI_Write               
+0000d750  PackCRC                 
+0000d766  Port_1                  
+0000d3c8  Port_2                  
+0000ce78  Read_Accelorameter      
+0000cf56  Read_Gyroscope          
+0000d78e  SPI_Read                
+0000d622  SPI_Transceive          
+0000d7e6  SPI_Write               
 00000172  TA0CCR0                 
 00000174  TA0CCR1                 
 00000176  TA0CCR2                 
@@ -323,7 +345,7 @@ address   name
 000010c0  TLV_CHECKSUM            
 000010f7  TLV_DCO_30_LEN          
 000010f6  TLV_DCO_30_TAG          
-0000cd62  Timer_A                 
+0000d6f8  Timer_A                 
 0000005d  UCA0ABCTL               
 00000062  UCA0BR0                 
 00000063  UCA0BR1                 
@@ -345,23 +367,26 @@ address   name
 0000006e  UCB0RXBUF               
 0000006d  UCB0STAT                
 0000006f  UCB0TXBUF               
-0000c8f6  USCI0RX_ISR             
-0000c7ba  Uart_TransmitTxPack     
-0000cda2  Uart_putchar            
+0000d234  USCI0RX_ISR             
+0000d0f8  Uart_TransmitTxPack     
+0000d738  Uart_putchar            
 00000120  WDTCTL                  
+00000340  X_Calibrate             
+00000342  Y_Calibrate             
+0000033e  Z_Calibrate             
 00000400  __STACK_END             
 00000050  __STACK_SIZE            
 UNDEFED   __TI_BINIT_Base         
 UNDEFED   __TI_BINIT_Limit        
-0000ce78  __TI_CINIT_Base         
-0000ce80  __TI_CINIT_Limit        
-0000ce74  __TI_Handler_Table_Base 
-0000ce78  __TI_Handler_Table_Limit
+0000d854  __TI_CINIT_Base         
+0000d85c  __TI_CINIT_Limit        
+0000d850  __TI_Handler_Table_Base 
+0000d854  __TI_Handler_Table_Limit
 UNDEFED   __TI_INITARRAY_Base     
 UNDEFED   __TI_INITARRAY_Limit    
-0000ce3e  __TI_ISR_TRAP           
-0000ce0a  __TI_decompress_none    
-0000ce52  __TI_decompress_rle24   
+0000d7de  __TI_ISR_TRAP           
+0000d7a0  __TI_decompress_none    
+0000d7f2  __TI_decompress_rle24   
 0000ffe0  __TI_int00              
 0000ffe4  __TI_int02              
 0000ffe6  __TI_int03              
@@ -379,63 +404,101 @@ ffffffff  __TI_pprof_out_hndl
 ffffffff  __TI_prof_data_size     
 ffffffff  __TI_prof_data_start    
 ffffffff  __c_args__              
-0000c48a  __mspabi_addf           
-0000cc9a  __mspabi_cmpf           
-0000c85a  __mspabi_divf           
-0000cb74  __mspabi_fixfi          
-0000cd2c  __mspabi_fltif          
-0000ce3a  __mspabi_func_epilog_1  
-0000ce38  __mspabi_func_epilog_2  
-0000ce36  __mspabi_func_epilog_3  
-0000ce34  __mspabi_func_epilog_4  
-0000ce32  __mspabi_func_epilog_5  
-0000ce30  __mspabi_func_epilog_6  
-0000ce2e  __mspabi_func_epilog_7  
-0000c5b6  __mspabi_mpyf           
-0000cde4  __mspabi_mpyi           
-0000cde4  __mspabi_mpyi_sw        
-0000c484  __mspabi_subf           
-0000cb06  _auto_init              
-0000cd88  _c_int00_noargs_noexit  
+0000cd4c  __mspabi_addf           
+0000d5d8  __mspabi_cmpf           
+0000d198  __mspabi_divf           
+0000d4b2  __mspabi_fixfi          
+0000d66a  __mspabi_fltif          
+0000d7d0  __mspabi_func_epilog_1  
+0000d7ce  __mspabi_func_epilog_2  
+0000d7cc  __mspabi_func_epilog_3  
+0000d7ca  __mspabi_func_epilog_4  
+0000d7c8  __mspabi_func_epilog_5  
+0000d7c6  __mspabi_func_epilog_6  
+0000d7c4  __mspabi_func_epilog_7  
+0000d034  __mspabi_mpyf           
+0000d77a  __mspabi_mpyi           
+0000d77a  __mspabi_mpyi_sw        
+0000d7d4  __mspabi_negf           
+0000d6cc  __mspabi_slli           
+0000d6f4  __mspabi_slli_1         
+0000d6e2  __mspabi_slli_10        
+0000d6e0  __mspabi_slli_11        
+0000d6de  __mspabi_slli_12        
+0000d6dc  __mspabi_slli_13        
+0000d6da  __mspabi_slli_14        
+0000d6d8  __mspabi_slli_15        
+0000d6f2  __mspabi_slli_2         
+0000d6f0  __mspabi_slli_3         
+0000d6ee  __mspabi_slli_4         
+0000d6ec  __mspabi_slli_5         
+0000d6ea  __mspabi_slli_6         
+0000d6e8  __mspabi_slli_7         
+0000d6e6  __mspabi_slli_8         
+0000d6e4  __mspabi_slli_9         
+0000d6a0  __mspabi_srai           
+0000d6c8  __mspabi_srai_1         
+0000d6b6  __mspabi_srai_10        
+0000d6b4  __mspabi_srai_11        
+0000d6b2  __mspabi_srai_12        
+0000d6b0  __mspabi_srai_13        
+0000d6ae  __mspabi_srai_14        
+0000d6ac  __mspabi_srai_15        
+0000d6c6  __mspabi_srai_2         
+0000d6c4  __mspabi_srai_3         
+0000d6c2  __mspabi_srai_4         
+0000d6c0  __mspabi_srai_5         
+0000d6be  __mspabi_srai_6         
+0000d6bc  __mspabi_srai_7         
+0000d6ba  __mspabi_srai_8         
+0000d6b8  __mspabi_srai_9         
+0000cd46  __mspabi_subf           
+0000d444  _auto_init              
+0000d71e  _c_int00_noargs_noexit  
 0000fffe  _reset_vector           
 000003b0  _stack                  
-0000ce5c  _system_post_cinit      
-0000ce58  _system_pre_init        
-0000ce4c  abort                   
+0000d7fc  _system_post_cinit      
+0000d7f8  _system_pre_init        
+0000d7ec  abort                   
 00000300  accelorameter_raw       
-0000033a  ax                      
-00000318  ax_char                 
+0000c882  atan2f                  
+0000c3cc  atanf                   
+00000344  ax                      
+0000031c  ax_char                 
 0000030c  ay                      
-0000031a  ay_char                 
+0000031e  ay_char                 
 00000310  az                      
-0000031c  az_char                 
-0000cc40  copy_in                 
-00000342  g_Rate                  
+00000320  az_char                 
+0000d57e  copy_in                 
+00000354  errno                   
+0000034c  g_Rate                  
 00000306  gyroscope_raw           
 00000314  gz                      
-00000346  gz_offset               
+00000350  gz_offset               
 0000c000  main                    
-0000ce1c  memcpy                  
-00000338  nomotion_gyro_counter   
-0000031e  pitch_char              
-00000332  read                    
-0000032f  rec_LEN                 
-00000328  received_ch             
-00000320  roll_char               
+0000d7b2  memcpy                  
+0000033c  nomotion_gyro_counter   
+00000318  pitch                   
+00000322  pitch_char              
+00000336  read                    
+00000333  rec_LEN                 
+0000032c  received_ch             
+00000324  roll_char               
 00000200  rxPackArray             
-00000330  rx_ACK                  
-0000032d  rx_CMD                  
-0000032c  rx_CRC                  
-0000032e  rx_LEN                  
-0000032a  rx_REC                  
-0000032b  rx_State                
-00000322  sensor                  
-00000334  timer                   
-00000336  timer_count             
-00000331  uart_rx_received        
-00000324  whoami                  
-0000033e  yaw                     
-00000326  yaw_char                
+00000334  rx_ACK                  
+00000331  rx_CMD                  
+00000330  rx_CRC                  
+00000332  rx_LEN                  
+0000032e  rx_REC                  
+0000032f  rx_State                
+00000326  sensor                  
+0000cc0a  sqrtf                   
+00000338  timer                   
+0000033a  timer_count             
+00000335  uart_rx_received        
+00000328  whoami                  
+00000348  yaw                     
+0000032a  yaw_char                
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -534,31 +597,36 @@ address   name
 0000030c  ay                      
 00000310  az                      
 00000314  gz                      
-00000318  ax_char                 
-0000031a  ay_char                 
-0000031c  az_char                 
-0000031e  pitch_char              
-00000320  roll_char               
-00000322  sensor                  
-00000324  whoami                  
-00000326  yaw_char                
-00000328  received_ch             
-0000032a  rx_REC                  
-0000032b  rx_State                
-0000032c  rx_CRC                  
-0000032d  rx_CMD                  
-0000032e  rx_LEN                  
-0000032f  rec_LEN                 
-00000330  rx_ACK                  
-00000331  uart_rx_received        
-00000332  read                    
-00000334  timer                   
-00000336  timer_count             
-00000338  nomotion_gyro_counter   
-0000033a  ax                      
-0000033e  yaw                     
-00000342  g_Rate                  
-00000346  gz_offset               
+00000318  pitch                   
+0000031c  ax_char                 
+0000031e  ay_char                 
+00000320  az_char                 
+00000322  pitch_char              
+00000324  roll_char               
+00000326  sensor                  
+00000328  whoami                  
+0000032a  yaw_char                
+0000032c  received_ch             
+0000032e  rx_REC                  
+0000032f  rx_State                
+00000330  rx_CRC                  
+00000331  rx_CMD                  
+00000332  rx_LEN                  
+00000333  rec_LEN                 
+00000334  rx_ACK                  
+00000335  uart_rx_received        
+00000336  read                    
+00000338  timer                   
+0000033a  timer_count             
+0000033c  nomotion_gyro_counter   
+0000033e  Z_Calibrate             
+00000340  X_Calibrate             
+00000342  Y_Calibrate             
+00000344  ax                      
+00000348  yaw                     
+0000034c  g_Rate                  
+00000350  gz_offset               
+00000354  errno                   
 000003b0  _stack                  
 00000400  __STACK_END             
 000010c0  TLV_CHECKSUM            
@@ -575,52 +643,89 @@ address   name
 000010fe  CALDCO_1MHZ             
 000010ff  CALBC1_1MHZ             
 0000c000  main                    
-0000c248  Init_BMI160             
-0000c484  __mspabi_subf           
-0000c48a  __mspabi_addf           
-0000c5b6  __mspabi_mpyf           
-0000c67a  Read_Accelorameter      
-0000c71a  Read_Gyroscope          
-0000c7ba  Uart_TransmitTxPack     
-0000c85a  __mspabi_divf           
-0000c8f6  USCI0RX_ISR             
-0000c984  Init                    
-0000ca0a  Float_to_Char_array     
-0000ca8a  Port_2                  
-0000cb06  _auto_init              
-0000cb74  __mspabi_fixfi          
-0000cc40  copy_in                 
-0000cc9a  __mspabi_cmpf           
-0000cce4  SPI_Transceive          
-0000cd2c  __mspabi_fltif          
-0000cd62  Timer_A                 
-0000cd88  _c_int00_noargs_noexit  
-0000cda2  Uart_putchar            
-0000cdba  PackCRC                 
-0000cdd0  Port_1                  
-0000cde4  __mspabi_mpyi           
-0000cde4  __mspabi_mpyi_sw        
-0000cdf8  SPI_Read                
-0000ce0a  __TI_decompress_none    
-0000ce1c  memcpy                  
-0000ce2e  __mspabi_func_epilog_7  
-0000ce30  __mspabi_func_epilog_6  
-0000ce32  __mspabi_func_epilog_5  
-0000ce34  __mspabi_func_epilog_4  
-0000ce36  __mspabi_func_epilog_3  
-0000ce38  __mspabi_func_epilog_2  
-0000ce3a  __mspabi_func_epilog_1  
-0000ce3e  __TI_ISR_TRAP           
-0000ce46  SPI_Write               
-0000ce4c  C$$EXIT                 
-0000ce4c  abort                   
-0000ce52  __TI_decompress_rle24   
-0000ce58  _system_pre_init        
-0000ce5c  _system_post_cinit      
-0000ce74  __TI_Handler_Table_Base 
-0000ce78  __TI_CINIT_Base         
-0000ce78  __TI_Handler_Table_Limit
-0000ce80  __TI_CINIT_Limit        
+0000c3cc  atanf                   
+0000c642  Init_BMI160             
+0000c882  atan2f                  
+0000cac2  Initialization          
+0000cc0a  sqrtf                   
+0000cd46  __mspabi_subf           
+0000cd4c  __mspabi_addf           
+0000ce78  Read_Accelorameter      
+0000cf56  Read_Gyroscope          
+0000d034  __mspabi_mpyf           
+0000d0f8  Uart_TransmitTxPack     
+0000d198  __mspabi_divf           
+0000d234  USCI0RX_ISR             
+0000d2c2  Init                    
+0000d348  Float_to_Char_array     
+0000d3c8  Port_2                  
+0000d444  _auto_init              
+0000d4b2  __mspabi_fixfi          
+0000d57e  copy_in                 
+0000d5d8  __mspabi_cmpf           
+0000d622  SPI_Transceive          
+0000d66a  __mspabi_fltif          
+0000d6a0  __mspabi_srai           
+0000d6ac  __mspabi_srai_15        
+0000d6ae  __mspabi_srai_14        
+0000d6b0  __mspabi_srai_13        
+0000d6b2  __mspabi_srai_12        
+0000d6b4  __mspabi_srai_11        
+0000d6b6  __mspabi_srai_10        
+0000d6b8  __mspabi_srai_9         
+0000d6ba  __mspabi_srai_8         
+0000d6bc  __mspabi_srai_7         
+0000d6be  __mspabi_srai_6         
+0000d6c0  __mspabi_srai_5         
+0000d6c2  __mspabi_srai_4         
+0000d6c4  __mspabi_srai_3         
+0000d6c6  __mspabi_srai_2         
+0000d6c8  __mspabi_srai_1         
+0000d6cc  __mspabi_slli           
+0000d6d8  __mspabi_slli_15        
+0000d6da  __mspabi_slli_14        
+0000d6dc  __mspabi_slli_13        
+0000d6de  __mspabi_slli_12        
+0000d6e0  __mspabi_slli_11        
+0000d6e2  __mspabi_slli_10        
+0000d6e4  __mspabi_slli_9         
+0000d6e6  __mspabi_slli_8         
+0000d6e8  __mspabi_slli_7         
+0000d6ea  __mspabi_slli_6         
+0000d6ec  __mspabi_slli_5         
+0000d6ee  __mspabi_slli_4         
+0000d6f0  __mspabi_slli_3         
+0000d6f2  __mspabi_slli_2         
+0000d6f4  __mspabi_slli_1         
+0000d6f8  Timer_A                 
+0000d71e  _c_int00_noargs_noexit  
+0000d738  Uart_putchar            
+0000d750  PackCRC                 
+0000d766  Port_1                  
+0000d77a  __mspabi_mpyi           
+0000d77a  __mspabi_mpyi_sw        
+0000d78e  SPI_Read                
+0000d7a0  __TI_decompress_none    
+0000d7b2  memcpy                  
+0000d7c4  __mspabi_func_epilog_7  
+0000d7c6  __mspabi_func_epilog_6  
+0000d7c8  __mspabi_func_epilog_5  
+0000d7ca  __mspabi_func_epilog_4  
+0000d7cc  __mspabi_func_epilog_3  
+0000d7ce  __mspabi_func_epilog_2  
+0000d7d0  __mspabi_func_epilog_1  
+0000d7d4  __mspabi_negf           
+0000d7de  __TI_ISR_TRAP           
+0000d7e6  SPI_Write               
+0000d7ec  C$$EXIT                 
+0000d7ec  abort                   
+0000d7f2  __TI_decompress_rle24   
+0000d7f8  _system_pre_init        
+0000d7fc  _system_post_cinit      
+0000d850  __TI_Handler_Table_Base 
+0000d854  __TI_CINIT_Base         
+0000d854  __TI_Handler_Table_Limit
+0000d85c  __TI_CINIT_Limit        
 0000ffe0  __TI_int00              
 0000ffe4  __TI_int02              
 0000ffe6  __TI_int03              
@@ -644,4 +749,4 @@ UNDEFED   __TI_BINIT_Limit
 UNDEFED   __TI_INITARRAY_Base     
 UNDEFED   __TI_INITARRAY_Limit    
 
-[201 symbols]
+[243 symbols]

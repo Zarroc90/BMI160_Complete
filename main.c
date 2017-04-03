@@ -9,8 +9,8 @@ int main(void) {
 	const float aRes = 4.0 / 32768.0;
 	const float gRes = 2000.0 / 32768.0;
 	//const float mRes = 10.0 * 4219.0/32760.0;
-	//const float alpha = 0.5;
-	//const float OneeightyDivPi = 180.0/M_PI;
+	const float alpha = 0.5;
+	const float OneeightyDivPi = 180.0/M_PI;
 
 	Init();
 
@@ -72,26 +72,31 @@ int main(void) {
 			if (read == 2) {		//if gyro is awake
 
 				P2OUT |= BIT2;
-				Read_Accelorameter(accelorameter_raw);
-				//ax = accelorameter_raw[0] * aRes * 1000;		//*aRes*1000;
-				ay = accelorameter_raw[1] * aRes * 1000;		//*aRes*1000;
-				//az = accelorameter_raw[2] * aRes;				//*aRes*1000;
-
 				gz = gyroscope_raw[2];
 				g_Rate = (gz - gz_offset) * gRes;
 				yaw += g_Rate / 50.0f;
 
-				if (((gz <= (gz_offset + 1)) && (gz >= (gz_offset - 1)))
-						&& timer == 0) {//gz is near offset (in nomotion) and not longer active then timer
+				if (((gz <= (gz_offset + 1)) && (gz >= (gz_offset - 1))) && timer == 0) {//gz is near offset (in nomotion) and not longer active then timer
 					if (nomotion_gyro_counter == 20) {
 						SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x14);//Set Gyro in Suspend Mode
+						read=3;
+						Read_Accelorameter(accelorameter_raw);
+						ax = accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
+						ay = accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
+						az = accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
 						nomotion_gyro_counter = 0;
 					} else {
 						nomotion_gyro_counter++;
+
 					}
 
 				}
-
+				else {
+					Float_to_Char_array(yaw, yaw_type);
+					Uart_TransmitTxPack(txYaw, yaw_char, 2);
+					P2OUT &= ~BIT2;
+					read=4;
+				}
 				/*
 				 gx = gyroscope_raw[0] * gRes;		//gRes;
 				 gy = gyroscope_raw[1] * gRes;		//gRes;
@@ -106,16 +111,34 @@ int main(void) {
 
 				 yaw = atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3);
 				 */
-				Float_to_Char_array(ay, ay_type);
-				Uart_TransmitTxPack(txAY, ay_char, 2);
-				//Float_to_Char_array(roll, roll_type);
-				//Float_to_Char_array(pitch, pitch_type);
-				Float_to_Char_array(yaw, yaw_type);
-				//Uart_TransmitTxPack(txRoll, roll_char, 2);
-				//Uart_TransmitTxPack(txPitch, pitch_char, 2);
-				Uart_TransmitTxPack(txYaw, yaw_char, 2);
-				P2OUT &= ~BIT2;
-				read = 3;
+
+
+
+				//Float_to_Char_array(ay, ay_type);
+				//Uart_TransmitTxPack(txAY, ay_char, 2);
+
+				//read = 3;
+			}
+			if (read == 3) {		//If Gyro sleep
+
+				Read_Accelorameter(accelorameter_raw);
+				 ax += accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
+				 ay += accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
+				 az += accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
+
+				 //Roll & Pitch Equations
+
+				 //roll  = atan2f(-ay, az);
+				 //roll  = roll*OneeightyDivPi;
+				 pitch = atan2f(ax, sqrtf(ay*ay + az*az));
+				 pitch = pitch*OneeightyDivPi;
+
+				 //Float_to_Char_array(roll, roll_type);
+				 Float_to_Char_array(pitch, pitch_type);
+				 //Uart_TransmitTxPack(txRoll, roll_char, 2);
+				 Uart_TransmitTxPack(txPitch, pitch_char, 2);
+
+				 read = 4;
 			}
 
 			//temperature = ((float)Read_Temp()/2 + 23.0);
@@ -142,15 +165,10 @@ int main(void) {
 		 Uart_TransmitTxPack(txAZ,az_char,2);
 		 Uart_TransmitTxPack(txGX,gx_char,2);
 		 Uart_TransmitTxPack(txGY,gy_char,2);
-		 Uart_TransmitTxPack(txGZ,gz_char,2);
+		 Uart_TransmitTxPack(txGZ,gz_char,2);*/
 
-		 //Roll & Pitch Equations
-		 roll  = atan2f(-pay, paz);
-		 roll  = roll*OneeightyDivPi;
-		 pitch = atan2f(pax, sqrtf(pay*pay + paz*paz));
-		 pitch = pitch*OneeightyDivPi;*/
 
-		//Position();
+		 //Go to sleep
 		_BIS_SR(LPM3_bits + GIE);
 
 	}
@@ -406,6 +424,8 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_USER_GYRO_CONFIG_ADDR, 0x27);//Gyro Config 2 8 -> 100Hz
 	SPI_Write(BMI160_AG, BMI160_USER_GYRO_RANGE_ADDR, 0x00);//Gyro Range: 2000°/s
 
+	Initialization();
+
 	//Get Offset
 	for (i = 0; i < 100; ++i) {
 		Read_Gyroscope(gyroscope_raw);
@@ -465,9 +485,9 @@ void Read_Accelorameter(int * destination) {
 		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_MSB);
 		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_LSB);
 
-		destination[0] = (rawData[0] << 8) | rawData[1];
-		destination[1] = (rawData[2] << 8) | rawData[3];
-		destination[2] = (rawData[4] << 8) | rawData[5];
+		destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];
+		destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];
+		destination[2] = (rawData[Z_Calibrate] << 8) | rawData[Z_Calibrate+1];
 		break;
 	}
 	default:
@@ -494,9 +514,9 @@ void Read_Gyroscope(int * destination) {
 		break;
 	}
 
-	destination[0] = (rawData[0] << 8) | rawData[1];
-	destination[1] = (rawData[2] << 8) | rawData[3];
-	destination[2] = (rawData[4] << 8) | rawData[5];
+	destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];	//x
+	destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];	//y
+	destination[2] = (rawData[Z_Calibrate] << 8) | rawData[Z_Calibrate+1];	//z
 }
 
 int Twos_Complement_To_Decimal(int number_of_bits, int number) {
@@ -595,6 +615,48 @@ char PackCRC(unsigned char *s, unsigned char length) {
 		c ^= s[i];
 	}
 	return c;
+}
+
+void Initialization(){
+
+	/* Funktion zur Ermittlung der Gravitaionskraft
+	 *
+	 * -> Zuordnung der internen Achsen zum externen Koordinatensystems
+	 *
+	 */
+	int i;
+	for (i = 0; i < 10; ++i) {
+		Read_Accelorameter(accelorameter_raw);
+		ax += accelorameter_raw[0];
+		ay += accelorameter_raw[1];
+		az += accelorameter_raw[2];
+		__delay_cycles(1600);
+	}
+
+	ax = fabsf(ax / 100);
+	ay = fabsf(ay / 100);
+	az = fabsf(az / 100);
+
+	//X=0	Y=2		Z=4
+
+	if (ax >= ay)
+	{	if (ax >= az)
+		{ Z_Calibrate = 0;
+		  X_Calibrate = 4;}
+		else
+		{ Z_Calibrate = 4;
+		  }
+	}
+	else
+	{	if (ay >= az)
+		{Z_Calibrate = 2;
+		 Y_Calibrate = 0;
+		 X_Calibrate = 4;}
+		else
+		{Z_Calibrate = 4;}
+
+	}
+
 }
 
 #pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold -> Window close/Broke
