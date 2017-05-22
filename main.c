@@ -56,7 +56,7 @@ int main(void) {
 			rx_CMD = 0x00;
 			break;
 		}
-
+		P2OUT |= BIT2;	//LED an
 		switch (sensor) {
 
 		case BMI160: {
@@ -71,7 +71,7 @@ int main(void) {
 			 }*/
 			if (read == 2) {		//if gyro is awake
 
-				P2OUT |= BIT2;
+				//P2OUT |= BIT2;	//LED an
 				gz = gyroscope_raw[2];
 				g_Rate = (gz - gz_offset) * gRes;
 				yaw += g_Rate / 50.0f;
@@ -79,22 +79,28 @@ int main(void) {
 				if (((gz <= (gz_offset + 1)) && (gz >= (gz_offset - 1))) && timer == 0) {//gz is near offset (in nomotion) and not longer active then timer
 					if (nomotion_gyro_counter == 20) {
 						SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x14);//Set Gyro in Suspend Mode
+						test1=SPI_Read(BMI160_AG, 0x02);
+						//SPI_Write(BMI160_AG, BMI160_USER_INTR_OUT_CTRL_ADDR, 0x0A);	//Interrupt 2 Disable
+						P2IFG &= ~BIT1;										//P2.1 IFG is cleared
+						P2IE &= ~BIT1;
+						P2IFG &= ~BIT1;										//P2.1 IFG is cleared
 						read=3;
 						Read_Accelorameter(accelorameter_raw);
 						ax = accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
 						ay = accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
 						az = accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
 						nomotion_gyro_counter = 0;
+						//P2OUT &= ~BIT2;		//LED aus
 					} else {
 						nomotion_gyro_counter++;
-
+						//P2OUT &= ~BIT2;		//LED aus
 					}
 
 				}
 				else {
-					Float_to_Char_array(yaw, yaw_type);
-					Uart_TransmitTxPack(txYaw, yaw_char, 2);
-					P2OUT &= ~BIT2;
+					//Float_to_Char_array(yaw, yaw_type);
+					//Uart_TransmitTxPack(txYaw, yaw_char, 2);
+					//P2OUT &= ~BIT2;		//LED aus
 					read=4;
 				}
 				/*
@@ -119,26 +125,31 @@ int main(void) {
 
 				//read = 3;
 			}
+
+
+
 			if (read == 3) {		//If Gyro sleep
 
 				Read_Accelorameter(accelorameter_raw);
-				 ax += accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
-				 ay += accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
-				 az += accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
+				ax += accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
+				ay += accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
+				az += accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
 
+				Float_to_Char_array(yaw, yaw_type);
+				Uart_TransmitTxPack(txYaw, yaw_char, 2);
 				 //Roll & Pitch Equations
 
 				 //roll  = atan2f(-ay, az);
 				 //roll  = roll*OneeightyDivPi;
-				 pitch = atan2f(ax, sqrtf(ay*ay + az*az));
-				 pitch = pitch*OneeightyDivPi;
+				pitch = atan2f(ax, sqrtf(ay*ay + az*az));
+				pitch = pitch*OneeightyDivPi;
 
 				 //Float_to_Char_array(roll, roll_type);
-				 Float_to_Char_array(pitch, pitch_type);
+				Float_to_Char_array(pitch, pitch_type);
 				 //Uart_TransmitTxPack(txRoll, roll_char, 2);
-				 Uart_TransmitTxPack(txPitch, pitch_char, 2);
+				Uart_TransmitTxPack(txPitch, pitch_char, 2);
 
-				 read = 4;
+				read = 4;
 			}
 
 			//temperature = ((float)Read_Temp()/2 + 23.0);
@@ -158,17 +169,18 @@ int main(void) {
 		 Float_to_Char_array(pay,ay_type);
 		 Float_to_Char_array(paz,az_type);
 		 Float_to_Char_array(gx,gx_type);
-		 Float_to_Char_array(gy,gy_type);
-		 Float_to_Char_array(gz,gz_type);
-		 Uart_TransmitTxPack(txAX,ax_char,2);
+		 Float_to_Char_array(gy,gy_type);*/
+		 //Float_to_Char_array(gz,gz_type);
+		 /*Uart_TransmitTxPack(txAX,ax_char,2);
 		 Uart_TransmitTxPack(txAY,ay_char,2);
 		 Uart_TransmitTxPack(txAZ,az_char,2);
 		 Uart_TransmitTxPack(txGX,gx_char,2);
-		 Uart_TransmitTxPack(txGY,gy_char,2);
-		 Uart_TransmitTxPack(txGZ,gz_char,2);*/
+		 Uart_TransmitTxPack(txGY,gy_char,2);*/
+		 //Uart_TransmitTxPack(txGZ,gz_char,2);
 
 
 		 //Go to sleep
+		P2OUT &= ~BIT2;		//LED aus
 		_BIS_SR(LPM3_bits + GIE);
 
 	}
@@ -207,7 +219,7 @@ void Init() {
 	UCB0CTL1 = UCSWRST;
 	UCB0CTL0 |= UCCKPL + UCMSB + UCMST + UCSYNC; 	// 3-pin, 8-bit SPI master
 	UCB0CTL1 |= UCSSEL_2; 									// SMCLK
-	UCB0BR0 |= 0x20; 										// /2
+	UCB0BR0 |= 100; 										// /2
 	UCB0BR1 = 0; 											//
 	UCB0CTL1 &= ~UCSWRST; 					// **Initialize USCI state machine**
 
@@ -226,7 +238,7 @@ void Init() {
 	//P1OUT &= ~BIT6;											//LED2 as off
 
 	P1IE |= BIT3;										//P1.3 Interrupt enabled
-	P2IE |= BIT1;										//P2.1 Interrupt enabled
+	P2IE &= ~BIT1;										//P2.1 Interrupt disabled
 	P1IES &= ~BIT3;						//Interrupt direction from low to high
 	P2IES &= ~BIT1;						//Interrupt direction from low to high
 	P1IFG &= ~BIT3;										//P1.3 IFG is cleared
@@ -419,7 +431,7 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x15);			//Start Gyro
 	__delay_cycles(1600000);
 
-	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x99);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 12,5Hz
+	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_RANGE_ADDR, 0x05);//ACC Range 0x03 -> 2g, 0x05 -> 4g, 0x08 ->8g
 	SPI_Write(BMI160_AG, BMI160_USER_GYRO_CONFIG_ADDR, 0x27);//Gyro Config 2 8 -> 100Hz
 	SPI_Write(BMI160_AG, BMI160_USER_GYRO_RANGE_ADDR, 0x00);//Gyro Range: 2000°/s
@@ -435,14 +447,14 @@ void Init_BMI160() {
 	gz_offset = gz_offset / 100;
 
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_0_ADDR, 0x01);	//Mini. consec samples over Motion Threshold value
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_1_ADDR, 0x02);	//anymotion Threshold = 3 *grange(7.81mg) sample to sample difference
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_2_ADDR, 0x01);	//nomotion Threshold = 2 *grange(7.81mg) sample to sample difference
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_1_ADDR, 0x09);	//anymotion Threshold = value *grange(7.81mg) sample to sample difference
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_2_ADDR, 0x01);	//nomotion Threshold = value *grange(7.81mg) sample to sample difference
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_3_ADDR, 0x01);	//no motion config
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_4_ADDR, 0x28); //High g Threshold 75%
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_4_ADDR, 0x4B); //High g Threshold 75%
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_0_ADDR, 0x07);	//Enable Any Motion Interrupt on all 3 Acc axis
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_1_ADDR, 0x12);	//Enable Data ready + High g on Y axis interrupt
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_2_ADDR, 0x07);	//Enable noMotion Interrupt on all 3 Acc axis
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x02);//Interrupt High G MAP to Int 1
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x06);//Interrupt High G & Anymotion MAP to Int 1
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_1_ADDR, 0x08);//Interrupt data ready MAP to Int 2
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_OUT_CTRL_ADDR, 0xAA);	//Interrupt 1&2 Enable + Active High
 
@@ -659,7 +671,7 @@ void Initialization(){
 
 }
 
-#pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold -> Window close/Broke
+#pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold or Anymotion detected-> Window close/Broke
 __interrupt void Port_1(void) {
 
 	//MPU9250
@@ -667,10 +679,20 @@ __interrupt void Port_1(void) {
 	 P1IFG &= ~BIT3;				//Clear Interrupt Flag
 	 SPI_Read(MPU9250_AGM,MPUREG_INT_STATUS);//Clear INterrupt MPU9250*/
 
+	//P2OUT |= BIT2;	//LED an
 	//BMX055 & BMI160
 	P1IFG &= ~BIT3;										//Clear Interrupt Flag
 	//P1IE &= ~BIT3;											//P1.3 Interrupt disabled
-	yaw = 0;
+
+		test1 = SPI_Read(BMI160_AG, BMI160_USER_INTR_STAT_2_ADDR);
+	if ((test1 & 0x07) > 0)									//Anymotion detected
+		{P2IE |= BIT1;										//P2.1 Interrupt enabled
+
+		}
+	else {
+		yaw = 0;
+	}
+
 	LPM3_EXIT;
 }
 
@@ -683,14 +705,15 @@ __interrupt void Port_2(void) {
 	test = SPI_Read(BMI160_AG, BMI160_USER_STAT_ADDR);
 	if ((test & 0x40) == 0x40) {	//Gyro Data Ready
 
-		if (read == 0) {
+		/*if (read == 0) {
+			P2OUT |= BIT2;	//LED an
 			//Timer A Config
 			CCTL1 = CCIE;                             // CCR1 interrupt enabled
 			CCR0 = 16000;
 			CCR1 = 16000;
 			TACTL = TASSEL_2 + MC_1;                		// SMCLK + Up_Mode
 			timer = 1;
-		}
+		}*/
 		read = 2;											//Gyro measurement
 		Read_Gyroscope(gyroscope_raw);
 		//P1IE &= ~BIT3;									//disable interrupt anymotion
@@ -756,7 +779,8 @@ void __attribute__ ((interrupt(TIMER0_A1_VECTOR))) Timer_A (void)
 	switch (TA0IV) {
 	case 2:                                  // CCR1
 	{
-		if (timer_count == 1800) {
+		if (timer_count == 1800) {				///1 Count = 1ms
+			//P2OUT &= ~BIT2;		//LED aus
 			timer = 0;
 			timer_count = 0;
 			TACTL |= TACLR;										//Reset Timer A
