@@ -27,6 +27,7 @@ OBJS__QUOTED += \
 "main.obj" 
 
 C_SRCS__QUOTED += \
-"../MadgwickAHRS.c" 
+"../MadgwickAHRS.c" \
+"../main.c" 
 
 

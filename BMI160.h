@@ -102,7 +102,7 @@
 /**\name MAG CONFIG REGISTERS  FOR ODR*/
 /******************************************************/
 #define BMI160_USER_MAG_CONFIG_ADDR				(0X44)
-#ifdef FIFO_ENABLE
+
 /***************************************************/
 /**\name REGISTER FOR GYRO AND ACCEL DOWNSAMPLING RATES FOR FIFO*/
 /******************************************************/
@@ -112,7 +112,7 @@
 /******************************************************/
 #define BMI160_USER_FIFO_CONFIG_0_ADDR          (0X46)
 #define BMI160_USER_FIFO_CONFIG_1_ADDR          (0X47)
-#endif
+
 
 /***************************************************/
 /**\name MAG INTERFACE REGISTERS*/

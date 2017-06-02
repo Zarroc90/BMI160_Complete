@@ -45,6 +45,9 @@ int test_0,test_1,test_2,test_3;
 unsigned char rx_REC = 0, rx_State = rxIDLE, rx_CRC = 0, rx_CMD = 0, rx_LEN = 0, rec_LEN = 0, rxPackArray[255],rx_ACK=0,uart_rx_received=0;
 volatile char received_ch;
 
+const float aRes = 4.0 / 32768.0;
+const float gRes = 2000.0 / 32768.0;
+
 enum sensor_type{
 	MPU9250,
 	LSM9DS1,
@@ -78,7 +81,17 @@ enum result_type{
 #define CS_2	BIT2
 
 
-int sensor,read=0,timer=0,timer_count=0,nomotion_gyro_counter=0,Z_Calibrate=4,X_Calibrate=0, Y_Calibrate=2;
+#define Gyro_Awake		0x00
+#define Gyro_Sleep		0x01
+#define Gyro_Shutdown	0x02
+
+#define Frame_Control	0x40
+#define Frame_Regular	0x80
+#define Fifo_Mag_Data	0x10
+#define Fifo_Gyr_Data	0x08
+#define Fifo_Acc_Data	0x04
+
+int sensor,gyro_status=Gyro_Sleep,timer=0,timer_count=0,nomotion_gyro_counter=0,Z_Calibrate=4,X_Calibrate=0, Y_Calibrate=2;
 int accelorameter_raw[3];
 int gyroscope_raw[3];
 int magnetometer_raw[3];
@@ -98,7 +111,7 @@ unsigned char roll_char[2],pitch_char[2],yaw_char[2],ax_char[2],ay_char[2],az_ch
 //signed int accelerationX[2],accelerationY[2];
 
 
-
+void Get_Fifo (int number_of_samples);
 void Float_to_Char_array(float value,enum result_type type);
 void String_number_rightify(float number, char *str);
 void Init();
