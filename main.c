@@ -27,6 +27,9 @@ int main(void) {
 	 *------------------------------------------------------------------------------------
 	 */
 
+	Float_to_Char_array(yaw, yaw_type);
+	Uart_TransmitTxPack(txYaw, yaw_char, 2);
+
 	while (1) {
 
 		//Uart Status machine
@@ -54,11 +57,47 @@ int main(void) {
 			break;
 		}
 		
-		whoami=SPI_Read(CS_0,0x00);							//0xD1
+		//whoami=SPI_Read(CS_0,0x00);							//0xD1
 		
 		//Window Tracking Code
 
-	/*	switch(gyro_status){
+		//OUTPUT
+
+
+
+		switch (status){
+					case FiFo_WM:
+						Get_Fifo(12,gyroscope_raw);
+						Float_to_Char_array(yaw, yaw_type);
+						Uart_TransmitTxPack(txYaw, yaw_char, 2);
+						status = FiFo_Empty;
+						break;
+					case FiFo_Empty:
+						//Read_Accelorameter(accelorameter_raw);
+						//ax += accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
+						//ay += accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
+						//az += accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
+
+						//pitch = atan2f(ax, sqrtf(ay*ay + az*az));
+						//pitch = pitch*OneeightyDivPi;
+						//Float_to_Char_array(pitch, pitch_type);
+						//Uart_TransmitTxPack(txPitch, pitch_char, 2);
+						break;
+					case High_G:
+						if (fabsf(yaw)<=45) {
+								yaw = 0;
+							}
+						Float_to_Char_array(yaw, yaw_type);
+						Uart_TransmitTxPack(txYaw, yaw_char, 2);
+						break;
+					default:
+						break;
+		}
+
+
+
+
+	/*	switch(status){
 			case Gyro_Awake:
 				gz = gyroscope_raw[2];
 				g_Rate = (gz - gz_offset) * gRes;
@@ -71,7 +110,7 @@ int main(void) {
 						P2IFG &= ~BIT1;										//P2.1 IFG is cleared
 						P2IE &= ~BIT1;
 						P2IFG &= ~BIT1;										//P2.1 IFG is cleared
-						gyro_status=Gyro_Shutdown;
+						status=Gyro_Shutdown;
 						Read_Accelorameter(accelorameter_raw);
 						ax = accelorameter_raw[0] * aRes * 1000 * alpha;		//*aRes*1000;
 						ay = accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
@@ -84,7 +123,7 @@ int main(void) {
 
 				}
 				else {
-					gyro_status=Gyro_Sleep;
+					status=Gyro_Sleep;
 				}
 				break;
 			case Gyro_Shutdown:
@@ -93,19 +132,14 @@ int main(void) {
 				ay += accelorameter_raw[1] * aRes * 1000 * alpha;		//*aRes*1000;
 				az += accelorameter_raw[2] * aRes * 1000 * alpha;		//*aRes*1000;
 
-				Float_to_Char_array(yaw, yaw_type);
-				Uart_TransmitTxPack(txYaw, yaw_char, 2);
+
 				 //Roll & Pitch Equations
 
 				 //roll  = atan2f(-ay, az);
 				 //roll  = roll*OneeightyDivPi;
-				pitch = atan2f(ax, sqrtf(ay*ay + az*az));
-				pitch = pitch*OneeightyDivPi;
 
 				 //Float_to_Char_array(roll, roll_type);
-				Float_to_Char_array(pitch, pitch_type);
 				 //Uart_TransmitTxPack(txRoll, roll_char, 2);
-				Uart_TransmitTxPack(txPitch, pitch_char, 2);
 
 				break;
 			case Gyro_Sleep:
@@ -119,27 +153,19 @@ int main(void) {
 		}
 
 */
-		_BIS_SR(LPM3_bits + GIE);
 
+		_BIS_SR(LPM3_bits + GIE);
 
 	}
 }
 
-void Get_Fifo (int number_of_samples){
+void Get_Fifo (int number_of_samples,int * destination){
 
-int haeder, frame[10], data[3];
+int frame[6];
 
 
 	for (; number_of_samples > 0; --number_of_samples) {
-		/*haeder = SPI_Read(BMI160_AG,BMI160_USER_FIFO_DATA_ADDR); 		//Header
-		if (haeder == (Frame_Regular|Fifo_Gyr_Data)) {
-			frame[0] = (int) SPI_Transceive(BMI160_AG, (BMI160_USER_FIFO_DATA_ADDR | 0x80), 0x55)//SPI_Read(BMI160_AG,BMI160_USER_FIFO_DATA_ADDR);	//GYRO_X_MSB
-			frame[1] = (int) SPI_Transceive(BMI160_AG, (BMI160_USER_FIFO_DATA_ADDR | 0x80), 0x55);	//GYRO_X_LSB
-			frame[2] = (int) SPI_Transceive(BMI160_AG, (BMI160_USER_FIFO_DATA_ADDR | 0x80), 0x55);	//GYRO_Y_MSB
-			frame[3] = (int) SPI_Transceive(BMI160_AG, (BMI160_USER_FIFO_DATA_ADDR | 0x80), 0x55);	//GYRO_Y_LSB
-			frame[4] = (int) SPI_Transceive(BMI160_AG, (BMI160_USER_FIFO_DATA_ADDR | 0x80), 0x55);	//GYRO_Z_MSB
-			frame[5] = (int) SPI_Transceive(BMI160_AG, (BMI160_USER_FIFO_DATA_ADDR | 0x80), 0x55);	//GYRO_Z_LSB
-		*/
+
 			P2OUT &= (~BMI160_AG); 							// Pin LOW
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
@@ -150,12 +176,12 @@ int haeder, frame[10], data[3];
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[0] = UCB0RXBUF;						// Store received data
+			frame[4] = UCB0RXBUF;						// Store received data
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[1] = UCB0RXBUF;						// Store received data
+			frame[5] = UCB0RXBUF;						// Store received data
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
@@ -170,12 +196,12 @@ int haeder, frame[10], data[3];
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[4] = UCB0RXBUF;						// Store received data
+			frame[0] = UCB0RXBUF;						// Store received data
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[5] = UCB0RXBUF;						// Store received data
+			frame[1] = UCB0RXBUF;						// Store received data
 
 
 			P2OUT |= (BMI160_AG); 							// Pin High
@@ -183,10 +209,10 @@ int haeder, frame[10], data[3];
 			_delay_cycles(150);
 
 
-			data[0] = (frame[X_Calibrate] << 8) | frame[X_Calibrate+1];	//x
-			data[1] = (frame[Y_Calibrate] << 8) | frame[Y_Calibrate+1];	//y
-			data[2] = (frame[Z_Calibrate] << 8) | frame[Z_Calibrate+1];	//z
-			g_Rate = (data[2] - gz_offset) * gRes;
+			destination[2] = (frame[Z_Calibrate+1] << 8) | frame[Z_Calibrate];	//z
+			destination[1] = (frame[Y_Calibrate+1] << 8) | frame[Y_Calibrate];	//y
+			destination[0] = (frame[X_Calibrate+1] << 8) | frame[X_Calibrate];	//x
+			g_Rate = (destination[2] - gz_offset) * gRes;
 			yaw += g_Rate / 50.0f;
 
 
@@ -219,6 +245,7 @@ void Init() {
 	DCOCTL = 0;
 	BCSCTL1 = CALBC1_1MHZ;
 	DCOCTL = CALDCO_1MHZ;
+	BCSCTL3 |= LFXT1S_2;
 
 	P2OUT |= BIT0;							//Port 2.0 as High
 	P2DIR |= BIT0; 							//Port 2.0 as Output
@@ -449,17 +476,17 @@ void Init_BMI160() {
 	 */
 
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB6);			//softreset
-	__delay_cycles(3200000);
+	__delay_cycles(100000);
 	whoami = SPI_Read(CS_0, 0x00);
 
 
 	//-----------LOW Power Mode----------------
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB6);			//softreset
-	__delay_cycles(3200000);
+	__delay_cycles(100000);
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x11);			//Start ACC
-	__delay_cycles(1600000);
+	__delay_cycles(100000);
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x15);			//Start Gyro
-	__delay_cycles(1600000);
+	__delay_cycles(100000);
 
 	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_RANGE_ADDR, 0x05);//ACC Range 0x03 -> 2g, 0x05 -> 4g, 0x08 ->8g
@@ -476,10 +503,11 @@ void Init_BMI160() {
 	}
 	gz_offset = gz_offset / 100;
 
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_0_ADDR, 0x01);	//Mini. consec samples over Motion Threshold value
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_0_ADDR, 0x05);	//Mini. consec samples over Motion Threshold value
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_1_ADDR, 0x09);	//anymotion Threshold = value *grange(7.81mg) sample to sample difference
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_2_ADDR, 0x01);	//nomotion Threshold = value *grange(7.81mg) sample to sample difference
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_2_ADDR, 0x02);	//nomotion Threshold = value *grange(7.81mg) sample to sample difference
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_3_ADDR, 0x01);	//no motion config
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_3_ADDR, 0x09); //High g Val+1 * 2,5ms
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_4_ADDR, 0x4B); //High g Threshold 75%
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_DOWN_ADDR, 0x08); 	//FIFO Framerate GYR 100Hz ACC 50Hz -> Filtered Data
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_CONFIG_0_ADDR, 0x12); //Fifo Watermark -> 240=F0 Samples ^=960byte ^= 160x Gyrowert
@@ -487,14 +515,14 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_0_ADDR, 0x07);	//Enable Any Motion Interrupt on all 3 Acc axis 07
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_1_ADDR, 0x42);	//Enable Fifo WM + High g on Y axis interrupt	42
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_2_ADDR, 0x07);	//Enable noMotion Interrupt on all 3 Acc axis	07
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x04);//Interrupt High G & Anymotion MAP to Int 1
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x02);//Interrupt High G to Int 1
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_1_ADDR, 0x06);//Interrupt Fifo WM MAP to Int 2
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_OUT_CTRL_ADDR, 0xAA);	//Interrupt 1&2 Enable + Active High
 
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x12);	//Start ACC LpMode
-	__delay_cycles(1600000);
+	__delay_cycles(100000);
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x14);//Start Gyro Suspend Mode
-	__delay_cycles(1600000);
+	__delay_cycles(100000);
 
 	SPI_Write(BMI160_AG, BMI160_USER_PMU_TRIGGER_ADDR, 0x34);//Gyro sleep to suspend, wakeup if anymotion , sleep when nomotion
 
@@ -525,16 +553,16 @@ void Read_Accelorameter(int * destination) {
 	switch (sensor) {
 
 	case BMI160: {
-		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_MSB);
-		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_LSB);
+		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_MSB);
+		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_LSB);
 		rawData[2] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Y_MSB);
 		rawData[3] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Y_LSB);
-		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_MSB);
-		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_LSB);
+		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_MSB);
+		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_LSB);
 
-		destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];
-		destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];
 		destination[2] = (rawData[Z_Calibrate] << 8) | rawData[Z_Calibrate+1];
+		destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];
+		destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];
 		break;
 	}
 	default:
@@ -549,21 +577,21 @@ void Read_Gyroscope(int * destination) {
 	switch (sensor) {
 
 	case BMI160: {
-		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_MSB);
-		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_LSB);
+		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_MSB);
+		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_LSB);
 		rawData[2] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Y_MSB);
 		rawData[3] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Y_LSB);
-		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_MSB);
-		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_LSB);
+		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_MSB);
+		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_LSB);
 		break;
 	}
 	default:
 		break;
 	}
 
-	destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];	//x
-	destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];	//y
 	destination[2] = (rawData[Z_Calibrate] << 8) | rawData[Z_Calibrate+1];	//z
+	destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];	//y
+	destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];	//x
 }
 
 int Twos_Complement_To_Decimal(int number_of_bits, int number) {
@@ -702,24 +730,33 @@ void Initialization(){
 
 }
 
-#pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold or Anymotion detected-> Window close/Broke
+#pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold or Anymotion detected-> Window close/Broke	PRIO 19
 __interrupt void Port_1(void) {
 
+
+
+
+
+
+
+
+	timer=1;
 	P1IFG &= ~BIT3;											//Clear Interrupt Flag
+
 /*
 	int var = 0;
 	var = SPI_Read(BMI160_AG, BMI160_USER_INTR_STAT_2_ADDR);
 	if ((var & 0x07) > 0){										//Anymotion detected
-		gyro_status = Gyro_Awake;
+		status = Gyro_Awake;
 		}
 	else {
 		yaw = 0;
 	}
-
-	LPM3_EXIT;*/
+*/
+	LPM3_EXIT;
 }
 
-#pragma vector=PORT2_VECTOR		//FiFo
+#pragma vector=PORT2_VECTOR		//FiFo Prio 20
 __interrupt void Port_2(void) {
 
 	// BMI160
@@ -728,13 +765,13 @@ __interrupt void Port_2(void) {
 	var = SPI_Read(BMI160_AG, BMI160_USER_STAT_ADDR);		//check Data Ready Status register 	7|6|5|4|3|2|1|0
 	if ((var & 0x40) == 0x40) {								//Gyro Data Ready					Acc|Gyr|Mag ...
 
-		gyro_status = Gyro_Awake;											//Gyro measurement
+		status = Gyro_Awake;											//Gyro measurement
 		Read_Gyroscope(gyroscope_raw);
 		//P1IE &= ~BIT3;									//disable interrupt anymotion
 	}
 	if ((SPI_Read(BMI160_AG, BMI160_USER_PMU_STAT_ADDR) & 0x0C) == 0x00) { //Gyro Suspend Mode
 		Read_Gyroscope(gyroscope_raw);
-		gyro_status = Gyro_Sleep;
+		status = Gyro_Sleep;
 		//P1IE |= BIT3;								//enable interrupt anymotion
 	}
 	P2IFG &= ~BIT1;				//Clear Interrupt Flag
@@ -742,8 +779,21 @@ __interrupt void Port_2(void) {
 	 */
 
 	//SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
-	Get_Fifo(12);
-	P2IFG &= ~BIT1;				//Clear Interrupt Flag
+
+	status = FiFo_WM;
+
+
+	TAR = 0;
+	timer_count=0;
+	//TACTL |= TACLR;										//Reset Timer A
+	//Timer A Config
+	CCTL1 = CCIE;                             		// CCR1 interrupt enabled
+	CCR0 = 1000;
+	CCR1 = 1000;
+	TACTL = TASSEL_1 + MC_1;         		       		// ACLK + Up Mode
+
+
+	P2IFG &= ~BIT1;				//Clear Interrupt Flag FifO
 
 	LPM3_EXIT;
 }
@@ -799,13 +849,19 @@ void __attribute__ ((interrupt(TIMER0_A1_VECTOR))) Timer_A (void)
 	switch (TA0IV) {
 	case 2:                                  // CCR1
 	{
-		if (timer_count == 1800) {				///1 Count = 1ms
-			//P2OUT &= ~BIT2;		//LED aus
-			timer = 0;
+		if (timer_count == 5) {				///1 Count = 100ms
 			timer_count = 0;
-			TACTL |= TACLR;										//Reset Timer A
-			P2IE |= BIT1;								//P2.1 Interrupt enabled
-
+			//TACTL |= TACLR;										//Reset Timer A
+			TAR = 0;
+			TACTL &= ~MC_1;
+			//get Gyro Data from FiFo
+			Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
+			//If high_g had occured reset yaw if in closing position
+			if (timer==1) {
+				status=High_G;
+			}
+			timer=0;
+			LPM3_EXIT;
 		} else {
 			timer_count++;
 		}

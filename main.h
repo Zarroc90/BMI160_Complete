@@ -81,9 +81,10 @@ enum result_type{
 #define CS_2	BIT2
 
 
-#define Gyro_Awake		0x00
-#define Gyro_Sleep		0x01
-#define Gyro_Shutdown	0x02
+#define FiFo_WM			0x00
+#define FiFo_Full		0x01
+#define FiFo_Empty		0x02
+#define High_G			0x03
 
 #define Frame_Control	0x40
 #define Frame_Regular	0x80
@@ -91,7 +92,7 @@ enum result_type{
 #define Fifo_Gyr_Data	0x08
 #define Fifo_Acc_Data	0x04
 
-int sensor,gyro_status=Gyro_Sleep,timer=0,timer_count=0,nomotion_gyro_counter=0,Z_Calibrate=4,X_Calibrate=0, Y_Calibrate=2;
+int sensor = BMI160,status=FiFo_Empty,timer=0,timer_count=0,nomotion_gyro_counter=0,Z_Calibrate=0,X_Calibrate=4, Y_Calibrate=2;
 int accelorameter_raw[3];
 int gyroscope_raw[3];
 int magnetometer_raw[3];
@@ -111,7 +112,7 @@ unsigned char roll_char[2],pitch_char[2],yaw_char[2],ax_char[2],ay_char[2],az_ch
 //signed int accelerationX[2],accelerationY[2];
 
 
-void Get_Fifo (int number_of_samples);
+void Get_Fifo (int number_of_samples,int * destination);
 void Float_to_Char_array(float value,enum result_type type);
 void String_number_rightify(float number, char *str);
 void Init();
