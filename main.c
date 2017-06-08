@@ -68,6 +68,7 @@ int main(void) {
 		switch (status){
 					case FiFo_WM:
 						Get_Fifo(12,gyroscope_raw);
+						gyro_status=Gyro_active;
 						Float_to_Char_array(yaw, yaw_type);
 						Uart_TransmitTxPack(txYaw, yaw_char, 2);
 						status = FiFo_Empty;
@@ -161,8 +162,9 @@ int main(void) {
 
 void Get_Fifo (int number_of_samples,int * destination){
 
-int frame[6];
+int frame[6] ,number_of_unused_samples;
 
+	number_of_unused_samples = number_of_samples-4;
 
 	for (; number_of_samples > 0; --number_of_samples) {
 
@@ -176,32 +178,32 @@ int frame[6];
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[4] = UCB0RXBUF;						// Store received data
+			frame[0] = UCB0RXBUF;							// Store received data = X LSB
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[5] = UCB0RXBUF;						// Store received data
+			frame[1] = UCB0RXBUF;							// Store received data = X MSB
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[2] = UCB0RXBUF;						// Store received data
+			frame[2] = UCB0RXBUF;							// Store received data = Y LSB
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[3] = UCB0RXBUF;						// Store received data
+			frame[3] = UCB0RXBUF;							// Store received data = Y MSB
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[0] = UCB0RXBUF;						// Store received data
+			frame[4] = UCB0RXBUF;							// Store received data = Z LSB
 
 			while (!(IFG2 & UCB0TXIFG)); 					// USCI_A0 TX buffer ready?
 			UCB0TXBUF = 0x55; 								// Send variable "data" over SPI to Slave
 			while (!(IFG2 & UCB0RXIFG)); 					// USCI_A0 RX Received?
-			frame[1] = UCB0RXBUF;						// Store received data
+			frame[5] = UCB0RXBUF;							// Store received data = Z MSB
 
 
 			P2OUT |= (BMI160_AG); 							// Pin High
@@ -209,11 +211,19 @@ int frame[6];
 			_delay_cycles(150);
 
 
-			destination[2] = (frame[Z_Calibrate+1] << 8) | frame[Z_Calibrate];	//z
-			destination[1] = (frame[Y_Calibrate+1] << 8) | frame[Y_Calibrate];	//y
-			destination[0] = (frame[X_Calibrate+1] << 8) | frame[X_Calibrate];	//x
-			g_Rate = (destination[2] - gz_offset) * gRes;
-			yaw += g_Rate / 50.0f;
+			if (gyro_status==Gyro_active || number_of_samples<=(number_of_unused_samples)) {
+
+				destination[0] = (frame[X_Calibrate+1] << 8) | frame[X_Calibrate];	//x
+				destination[1] = (frame[Y_Calibrate+1] << 8) | frame[Y_Calibrate];	//y
+				destination[2] = (frame[Z_Calibrate+1] << 8) | frame[Z_Calibrate];	//z
+
+				g_Rate = (destination[2] - gz_offset) * gRes;
+				yaw += g_Rate / 50.0f;
+			}
+			else {
+				SPI_Read(BMI160_AG, BMI160_USER_CHIP_ID_ADDR);
+			}
+
 
 
 	}
@@ -464,29 +474,20 @@ void String_number_rightify(float number, char str[]) {
 void Init_BMI160() {
 
 	int i;
-	/*SPI_Write(BMI160_AG,BMI160_CMD_COMMANDS_ADDR,0xB6);			//softreset
-	 __delay_cycles(200000);
-	 SPI_Write(BMI160_AG,BMI160_USER_ACCEL_CONFIG_ADDR,0x23);	//ACC CONFIG: 2 -> normal mode, 3 ODR 3,125Hz
-	 SPI_Write(BMI160_AG,BMI160_USER_ACCEL_RANGE_ADDR,0x03);		//ACC Range 0x03 -> 2g, 0x05 -> 4g, 0x08 ->8g
-	 SPI_Write(BMI160_AG,BMI160_USER_GYRO_CONFIG_ADDR,0x26);		//GYRO Config 2 -> normal Mode, 6 -> 25HZ output rate
-	 SPI_Write(BMI160_AG,BMI160_USER_GYRO_RANGE_ADDR,0x00);		//Gyro Range: 2000°/s
-	 SPI_Write(BMI160_AG,BMI160_CMD_COMMANDS_ADDR,0x11);			//Start ACC
-	 __delay_cycles(10000);
-	 SPI_Write(BMI160_AG,BMI160_CMD_COMMANDS_ADDR,0x15);			//Start Gyro
-	 */
-
-	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB6);			//softreset
-	__delay_cycles(100000);
-	whoami = SPI_Read(CS_0, 0x00);
-
 
 	//-----------LOW Power Mode----------------
+
+
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB6);			//softreset
 	__delay_cycles(100000);
-	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x11);			//Start ACC
+	//SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x15);			//Start ACC
+	SPI_Read(BMI160_AG, BMI160_USER_PMU_STAT_ADDR);
+	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x15);			//Start ACC
 	__delay_cycles(100000);
-	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x15);			//Start Gyro
+	SPI_Read(BMI160_AG, BMI160_USER_PMU_STAT_ADDR);
+	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0x11);			//Start Gyro
 	__delay_cycles(100000);
+	SPI_Read(BMI160_AG, BMI160_USER_PMU_STAT_ADDR);
 
 	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 	SPI_Write(BMI160_AG, BMI160_USER_ACCEL_RANGE_ADDR, 0x05);//ACC Range 0x03 -> 2g, 0x05 -> 4g, 0x08 ->8g
@@ -513,7 +514,7 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_CONFIG_0_ADDR, 0x12); //Fifo Watermark -> 240=F0 Samples ^=960byte ^= 160x Gyrowert
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_CONFIG_1_ADDR, 0x80); //FIFO enable Gyro storage //0x80
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_0_ADDR, 0x07);	//Enable Any Motion Interrupt on all 3 Acc axis 07
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_1_ADDR, 0x42);	//Enable Fifo WM + High g on Y axis interrupt	42
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_1_ADDR, 0x44);	//Enable Fifo WM + High g on Z axis interrupt	42
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_ENABLE_2_ADDR, 0x07);	//Enable noMotion Interrupt on all 3 Acc axis	07
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_0_ADDR, 0x02);//Interrupt High G to Int 1
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MAP_1_ADDR, 0x06);//Interrupt Fifo WM MAP to Int 2
@@ -553,16 +554,18 @@ void Read_Accelorameter(int * destination) {
 	switch (sensor) {
 
 	case BMI160: {
-		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_MSB);
-		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_LSB);
-		rawData[2] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Y_MSB);
-		rawData[3] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Y_LSB);
-		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_MSB);
-		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_LSB);
 
-		destination[2] = (rawData[Z_Calibrate] << 8) | rawData[Z_Calibrate+1];
-		destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];
-		destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];
+		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_LSB);
+		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_ACC_X_MSB);
+		rawData[2] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Y_LSB);
+		rawData[3] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Y_MSB);
+		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_LSB);
+		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_ACC_Z_MSB);
+
+		destination[0] = (rawData[X_Calibrate+1] << 8) | rawData[X_Calibrate];
+		destination[1] = (rawData[Y_Calibrate+1] << 8) | rawData[Y_Calibrate];
+		destination[2] = (rawData[Z_Calibrate+1] << 8) | rawData[Z_Calibrate];
+
 		break;
 	}
 	default:
@@ -577,21 +580,22 @@ void Read_Gyroscope(int * destination) {
 	switch (sensor) {
 
 	case BMI160: {
-		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_MSB);
-		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_LSB);
-		rawData[2] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Y_MSB);
-		rawData[3] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Y_LSB);
-		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_MSB);
-		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_LSB);
+		rawData[0] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_LSB);
+		rawData[1] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_X_MSB);
+		rawData[2] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Y_LSB);
+		rawData[3] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Y_MSB);
+		rawData[4] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_LSB);
+		rawData[5] = (int) SPI_Read(BMI160_AG, BMI160_GYRO_Z_MSB);
 		break;
 	}
 	default:
 		break;
 	}
 
-	destination[2] = (rawData[Z_Calibrate] << 8) | rawData[Z_Calibrate+1];	//z
-	destination[1] = (rawData[Y_Calibrate] << 8) | rawData[Y_Calibrate+1];	//y
-	destination[0] = (rawData[X_Calibrate] << 8) | rawData[X_Calibrate+1];	//x
+	destination[0] = (rawData[X_Calibrate+1] << 8) | rawData[X_Calibrate];	//x
+	destination[1] = (rawData[Y_Calibrate+1] << 8) | rawData[Y_Calibrate];	//y
+	destination[2] = (rawData[Z_Calibrate+1] << 8) | rawData[Z_Calibrate];	//z
+
 }
 
 int Twos_Complement_To_Decimal(int number_of_bits, int number) {
@@ -849,18 +853,24 @@ void __attribute__ ((interrupt(TIMER0_A1_VECTOR))) Timer_A (void)
 	switch (TA0IV) {
 	case 2:                                  // CCR1
 	{
-		if (timer_count == 5) {				///1 Count = 100ms
+		if (timer_count == 4) {				///1 Count = 100ms
 			timer_count = 0;
 			//TACTL |= TACLR;										//Reset Timer A
 			TAR = 0;
 			TACTL &= ~MC_1;
 			//get Gyro Data from FiFo
-			Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
+			//Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
+			//__delay_cycles(100);
+			//Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
 			//If high_g had occured reset yaw if in closing position
 			if (timer==1) {
 				status=High_G;
 			}
 			timer=0;
+			gyro_status=Gyro_sleep;
+			SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
+			SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB0);	//Flush Fifo
+			SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
 			LPM3_EXIT;
 		} else {
 			timer_count++;
