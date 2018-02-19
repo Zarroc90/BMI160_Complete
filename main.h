@@ -41,7 +41,7 @@
 #define txPosY  0xAD
 #define txPosZ  0xAE
 
-int test_0,test_1,test_2,test_3;
+int test_0,test_1=0,test_2,test_3;
 unsigned char rx_REC = 0, rx_State = rxIDLE, rx_CRC = 0, rx_CMD = 0, rx_LEN = 0, rec_LEN = 0, rxPackArray[255],rx_ACK=0,uart_rx_received=0;
 volatile char received_ch;
 
@@ -85,6 +85,8 @@ enum result_type{
 #define FiFo_Full		0x01
 #define FiFo_Empty		0x02
 #define High_G			0x03
+#define No_High_G		0x04
+#define Reset			0x05
 #define Gyro_sleep		0x00
 #define Gyro_active		0x01
 

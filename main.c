@@ -27,9 +27,6 @@ int main(void) {
 	 *------------------------------------------------------------------------------------
 	 */
 
-	Float_to_Char_array(yaw, yaw_type);
-	Uart_TransmitTxPack(txYaw, yaw_char, 2);
-
 	while (1) {
 
 		//Uart Status machine
@@ -57,7 +54,7 @@ int main(void) {
 			break;
 		}
 		
-		//whoami=SPI_Read(CS_0,0x00);							//0xD1
+		whoami=SPI_Read(CS_0,0x00);							//0xD1
 		
 		//Window Tracking Code
 
@@ -67,10 +64,16 @@ int main(void) {
 
 		switch (status){
 					case FiFo_WM:
-						Get_Fifo(12,gyroscope_raw);
 						gyro_status=Gyro_active;
-						Float_to_Char_array(yaw, yaw_type);
-						Uart_TransmitTxPack(txYaw, yaw_char, 2);
+						Get_Fifo(12,gyroscope_raw);
+
+						P2OUT &= ~BIT2; 							// Pin LOW
+						Uart_putchar((int)fabsf(yaw));
+						P2OUT |= BIT2; 								// Pin High
+
+						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x99);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
+						//Float_to_Char_array(yaw, yaw_type);
+						//Uart_TransmitTxPack(txYaw, yaw_char, 2);
 						status = FiFo_Empty;
 						break;
 					case FiFo_Empty:
@@ -84,12 +87,107 @@ int main(void) {
 						//Float_to_Char_array(pitch, pitch_type);
 						//Uart_TransmitTxPack(txPitch, pitch_char, 2);
 						break;
-					case High_G:
-						if (fabsf(yaw)<=45) {
+					case High_G: //Window closing
+						if (fabsf(yaw)<=180) {
 								yaw = 0;
 							}
-						Float_to_Char_array(yaw, yaw_type);
+
+						//Testing to read rest of fifo
+						Get_Fifo((test_0/6),gyroscope_raw);
+						SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
+						SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB0);	//Flush Fifo
+
+						Read_Accelorameter(accelorameter_raw);
+						ax = accelorameter_raw[0] * aRes * 1000;		//*aRes*1000;
+						ay = accelorameter_raw[1] * aRes * 1000;		//*aRes*1000;
+						az = accelorameter_raw[2] * aRes * 1000;		//*aRes*1000;
+
+						pitch = atan2f(ax, sqrtf(ay*ay + az*az));
+						pitch = pitch*OneeightyDivPi;
+
+						P2OUT &= ~BIT2; 							// Pin LOW
+
+						if (fabsf(yaw)<=8) {
+							if (fabsf(pitch)<=3)
+							{
+								Uart_putchar(0xF5);
+							}
+							else {
+								Uart_putchar(0xF0);
+							}
+							//Uart_putchar((char)fabsf(yaw));
+						}
+						else{
+							if (fabsf(pitch)<=3)
+								{
+									Uart_putchar(0xFF);
+								}
+							else {
+									Uart_putchar(0xF0);
+								} //(char)fabsf(yaw)
+							//Uart_putchar((char)fabsf(yaw));
+						}
+
+						P2OUT |= BIT2; 							// Pin High
+
+						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
+						/*Float_to_Char_array(yaw, yaw_type);
 						Uart_TransmitTxPack(txYaw, yaw_char, 2);
+						Float_to_Char_array(pitch, pitch_type);
+						Uart_TransmitTxPack(txPitch, pitch_char, 2);*/
+						break;
+					case No_High_G: //-> Window open
+						Read_Accelorameter(accelorameter_raw);
+						ax = accelorameter_raw[0] * aRes * 1000;		//*aRes*1000;
+						ay = accelorameter_raw[1] * aRes * 1000;		//*aRes*1000;
+						az = accelorameter_raw[2] * aRes * 1000;		//*aRes*1000;
+
+						//Testing to read rest of fifo
+						Get_Fifo((test_0/6),gyroscope_raw);
+						SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
+						SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB0);	//Flush Fifo
+
+						pitch = atan2f(ax, sqrtf(ay*ay + az*az));
+						pitch = pitch*OneeightyDivPi;
+						/*Float_to_Char_array(yaw, yaw_type);
+						Uart_TransmitTxPack(txYaw, yaw_char, 2);
+						Float_to_Char_array(pitch, pitch_type);
+						Uart_TransmitTxPack(txPitch, pitch_char, 2);*/
+
+						P2OUT &= ~BIT2; 							// Pin LOW
+
+						if (fabsf(yaw)>8) {
+							if (fabsf(pitch)<=3)
+								{
+									Uart_putchar(0xFF);
+								}
+							else {
+									Uart_putchar(0xF0);
+								}//(char)fabsf(yaw)
+							//Uart_putchar((char)fabsf(yaw));
+						}
+						else{
+							if (fabsf(pitch)<=3)
+							{
+								Uart_putchar(0xF5);
+							}
+							else {
+								Uart_putchar(0xF0);
+							}
+							//Uart_putchar((char)fabsf(yaw));
+						}
+
+						P2OUT |= BIT2; 							// Pin High
+
+						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
+						break;
+					case Reset:
+						__disable_interrupt();
+						yaw=0;
+						pitch=0;
+						Init_BMI160();
+						status = FiFo_Empty;
+						__enable_interrupt();
 						break;
 					default:
 						break;
@@ -166,7 +264,11 @@ int frame[6] ,number_of_unused_samples;
 
 	number_of_unused_samples = number_of_samples-4;
 
+
+
 	for (; number_of_samples > 0; --number_of_samples) {
+
+			test_1 =SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
 
 			P2OUT &= (~BMI160_AG); 							// Pin LOW
 
@@ -211,7 +313,21 @@ int frame[6] ,number_of_unused_samples;
 			_delay_cycles(150);
 
 
-			if (gyro_status==Gyro_active || number_of_samples<=(number_of_unused_samples)) {
+			if ((frame[0]==frame[1] && frame[1]==frame[2]) && (frame[2]==frame[3] && frame[3]==frame[4])) {
+				test_1 = test_1 + 1;
+				frame[0] = 0;
+				frame[1] = 0;
+				frame[2] = 0;
+				frame[3] = 0;
+				frame[4] = 0;
+				frame[5] = 0;
+				number_of_samples= number_of_samples +1;
+			}
+
+			test_2 =SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
+
+
+			if (gyro_status==Gyro_active /*|| number_of_samples<=(number_of_unused_samples)*/) {
 
 				destination[0] = (frame[X_Calibrate+1] << 8) | frame[X_Calibrate];	//x
 				destination[1] = (frame[Y_Calibrate+1] << 8) | frame[Y_Calibrate];	//y
@@ -221,7 +337,22 @@ int frame[6] ,number_of_unused_samples;
 				yaw += g_Rate / 50.0f;
 			}
 			else {
-				SPI_Read(BMI160_AG, BMI160_USER_CHIP_ID_ADDR);
+				/*if (test_2 == test_1) {
+					frame[0] = 0;
+					frame[1] = 0;
+					frame[2] = 0;
+					frame[3] = 0;
+					frame[4] = 0;
+					frame[5] = 0;
+					number_of_samples= number_of_samples +1;
+				}
+
+				destination[0] = (frame[X_Calibrate+1] << 8) | frame[X_Calibrate];	//x
+				destination[1] = (frame[Y_Calibrate+1] << 8) | frame[Y_Calibrate];	//y
+				destination[2] = (frame[Z_Calibrate+1] << 8) | frame[Z_Calibrate];	//z
+
+				g_Rate = (destination[2] - gz_offset) * gRes;
+				yaw += g_Rate / 50.0f;*/
 			}
 
 
@@ -241,7 +372,7 @@ void Init() {
 	// Sensor				BMI160
 	//Port 2.0	CS			AG
 	//Port 2.1	Int2
-	//Port 2.2
+	//Port 2.2  UART_READY
 	//Port 1.3	Int
 	//Port 1.5  CLK
 	//Port 1.6	MISO
@@ -257,8 +388,8 @@ void Init() {
 	DCOCTL = CALDCO_1MHZ;
 	BCSCTL3 |= LFXT1S_2;
 
-	P2OUT |= BIT0;							//Port 2.0 as High
-	P2DIR |= BIT0; 							//Port 2.0 as Output
+	P2OUT |= BIT0 + BIT2;							//Port 2.0 as High
+	P2DIR |= BIT0 + BIT2; 							//Port 2.0 as Output
 	P1SEL = BIT1 | BIT2 | BIT5 | BIT6 | BIT7; //Port1 Bit 5,6,7 as SPI Interface
 	P1SEL2 = BIT1 | BIT2 | BIT5 | BIT6 | BIT7; //Port1 Bit 5,6,7 as SPI Interface
 
@@ -288,10 +419,10 @@ void Init() {
 	P1REN |= BIT6+BIT4+BIT1+BIT0;						//P1 Pup/Pdown enabled
 	P1OUT &= ~(BIT4+BIT0);								//P1 Pdown
 
-	P2SEL &= ~(BIT7+BIT6+BIT5+BIT4+BIT3+BIT2);			//P2 as GPIO
-	P2DIR &= ~(BIT7+BIT6+BIT5+BIT4+BIT3+BIT2);			//P2 as Input
-	P2REN |= BIT7+BIT6+BIT5+BIT4+BIT3+BIT2;				//P2 Pup/Pdown enabled
-	P2OUT &= ~(BIT7+BIT6+BIT5+BIT4+BIT3+BIT2);			//P2 Pdown
+	P2SEL &= ~(BIT7+BIT6+BIT5+BIT4+BIT3);			//P2 as GPIO
+	P2DIR &= ~(BIT7+BIT6+BIT5+BIT4+BIT3);			//P2 as Input
+	P2REN |= BIT7+BIT6+BIT5+BIT4+BIT3;				//P2 Pup/Pdown enabled
+	P2OUT &= ~(BIT7+BIT6+BIT5+BIT4+BIT3);			//P2 Pdown
 
 	P3SEL = 0x00;										//P3 as GPIO
 	P3DIR = 0x00;										//P3 as Input
@@ -504,12 +635,15 @@ void Init_BMI160() {
 	}
 	gz_offset = gz_offset / 100;
 
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_0_ADDR, 0x05);	//Mini. consec samples over Motion Threshold value
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_1_ADDR, 0x09);	//anymotion Threshold = value *grange(7.81mg) sample to sample difference
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_0_ADDR, 0x04);	//Mini. consec samples over Motion Threshold value
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_1_ADDR, 0x04);	//anymotion Threshold = value *grange(7.81mg) sample to sample difference
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_2_ADDR, 0x02);	//nomotion Threshold = value *grange(7.81mg) sample to sample difference
 	SPI_Write(BMI160_AG, BMI160_USER_INTR_MOTION_3_ADDR, 0x01);	//no motion config
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_3_ADDR, 0x09); //High g Val+1 * 2,5ms
-	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_4_ADDR, 0x4B); //High g Threshold 75%
+	//SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_0_ADDR, 0x04); //High g Val+1 * 2,5ms
+	//SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_1_ADDR, 0x04); //High g Val+1 * 2,5ms
+	//SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_2_ADDR, 0x04); //High g Val+1 * 2,5ms
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_3_ADDR, 0x03); //High g Val+1 * 2,5ms
+	SPI_Write(BMI160_AG, BMI160_USER_INTR_LOWHIGH_4_ADDR, 0x40); //High g Threshold 15,63*Val
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_DOWN_ADDR, 0x08); 	//FIFO Framerate GYR 100Hz ACC 50Hz -> Filtered Data
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_CONFIG_0_ADDR, 0x12); //Fifo Watermark -> 240=F0 Samples ^=960byte ^= 160x Gyrowert
 	SPI_Write(BMI160_AG, BMI160_USER_FIFO_CONFIG_1_ADDR, 0x80); //FIFO enable Gyro storage //0x80
@@ -528,7 +662,7 @@ void Init_BMI160() {
 	SPI_Write(BMI160_AG, BMI160_USER_PMU_TRIGGER_ADDR, 0x34);//Gyro sleep to suspend, wakeup if anymotion , sleep when nomotion
 
 	SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB0);//Flush Fifo
-
+	__delay_cycles(100000);
 	//SPI_Write(BMI160_AG,BMI160_USER_INTR_MAP_1_ADDR,0x07);		//Interrupt MAP to Int 1
 
 }
@@ -637,7 +771,7 @@ char SPI_Transceive(char cs_signal, char reg, char data) {
 
 	P2OUT |= (cs_signal); 							// Pin High
 
-	_delay_cycles(150);
+	_delay_cycles(180);
 
 	return (received_ch);
 }
@@ -702,15 +836,15 @@ void Initialization(){
 	int i;
 	for (i = 0; i < 10; ++i) {
 		Read_Accelorameter(accelorameter_raw);
-		ax += accelorameter_raw[0];
-		ay += accelorameter_raw[1];
-		az += accelorameter_raw[2];
+		ax += accelorameter_raw[0] * aRes*1000;
+		ay += accelorameter_raw[1] * aRes*1000;
+		az += accelorameter_raw[2] * aRes*1000;
 		__delay_cycles(1600);
 	}
 
-	ax = fabsf(ax / 100);
-	ay = fabsf(ay / 100);
-	az = fabsf(az / 100);
+	ax = fabsf(ax / 10);
+	ay = fabsf(ay / 10);
+	az = fabsf(az / 10);
 
 	//X=0	Y=2		Z=4
 
@@ -736,13 +870,6 @@ void Initialization(){
 
 #pragma vector=PORT1_VECTOR	//Interrupt ACC over Threshold or Anymotion detected-> Window close/Broke	PRIO 19
 __interrupt void Port_1(void) {
-
-
-
-
-
-
-
 
 	timer=1;
 	P1IFG &= ~BIT3;											//Clear Interrupt Flag
@@ -804,9 +931,14 @@ __interrupt void Port_2(void) {
 
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void) {
-	while (!(IFG2 & UCA0TXIFG))
-		; // USCI_A0 TX buffer ready?
+	while (!(IFG2 & UCA0TXIFG)); // USCI_A0 TX buffer ready?
 	rx_REC = UCA0RXBUF;
+	if (rx_REC == 0x1A)
+		{
+			status = Reset;
+		}
+
+/*	rx_REC = UCA0RXBUF;
 	switch (rx_State) {
 	case rxIDLE:
 		if (rx_REC == 0x01) {
@@ -836,7 +968,7 @@ __interrupt void USCI0RX_ISR(void) {
 			uart_rx_received = 1;
 		}
 		break;
-	}
+	}*/
 	LPM3_EXIT;
 }
 
@@ -862,15 +994,19 @@ void __attribute__ ((interrupt(TIMER0_A1_VECTOR))) Timer_A (void)
 			//Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
 			//__delay_cycles(100);
 			//Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
+
 			//If high_g had occured reset yaw if in closing position
 			if (timer==1) {
-				status=High_G;
+				status = High_G;
+			}
+			else{
+				status = No_High_G;
 			}
 			timer=0;
 			gyro_status=Gyro_sleep;
-			SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
-			SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB0);	//Flush Fifo
-			SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
+			test_0 = SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
+			//SPI_Write(BMI160_AG, BMI160_CMD_COMMANDS_ADDR, 0xB0);	//Flush Fifo
+			//SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
 			LPM3_EXIT;
 		} else {
 			timer_count++;
