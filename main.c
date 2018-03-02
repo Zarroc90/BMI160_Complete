@@ -11,6 +11,7 @@ int main(void) {
 
 	received_ch = 0;
 
+
 	const float alpha = 0.5;
 	const float OneeightyDivPi = 180.0/M_PI;
 
@@ -54,22 +55,24 @@ int main(void) {
 			break;
 		}
 		
-		whoami=SPI_Read(CS_0,0x00);							//0xD1
+		//whoami=SPI_Read(CS_0,0x00);							//0xD1
 		
 		//Window Tracking Code
 
 		//OUTPUT
 
-
-
+                                //P2OUT &= ~BIT2;                             // Pin LOW
+		                        //Start_UART_Transmission();
+		                        //Uart_putchar((int)fabsf(yaw));
+		                        //_delay_cycles(30000);
+		                        //P2OUT |= BIT2;                          // Pin High
+		//printf("Test" + whoami);
 		switch (status){
 					case FiFo_WM:
 						gyro_status=Gyro_active;
 						Get_Fifo(12,gyroscope_raw);
 
-						P2OUT &= ~BIT2; 							// Pin LOW
-						Uart_putchar((int)fabsf(yaw));
-						P2OUT |= BIT2; 								// Pin High
+
 
 						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x99);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 						//Float_to_Char_array(yaw, yaw_type);
@@ -105,31 +108,34 @@ int main(void) {
 						pitch = atan2f(ax, sqrtf(ay*ay + az*az));
 						pitch = pitch*OneeightyDivPi;
 
-						P2OUT &= ~BIT2; 							// Pin LOW
+
 
 						if (fabsf(yaw)<=8) {
 							if (fabsf(pitch)<=3)
 							{
-								Uart_putchar(0xF5);
+							    Start_UART_Transmission();
+							    data = 0xF5;
 							}
 							else {
-								Uart_putchar(0xF0);
+							    Start_UART_Transmission();
+							    data = 0xF0;
 							}
 							//Uart_putchar((char)fabsf(yaw));
 						}
 						else{
 							if (fabsf(pitch)<=3)
 								{
-									Uart_putchar(0xFF);
+							    Start_UART_Transmission();
+							    data = 0xFF;
 								}
 							else {
-									Uart_putchar(0xF0);
+							    Start_UART_Transmission();
+							    data = 0xF0;
 								} //(char)fabsf(yaw)
 							//Uart_putchar((char)fabsf(yaw));
 						}
 
-						P2OUT |= BIT2; 							// Pin High
-
+						//Uart_putchar((int)fabsf(yaw));
 						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 						/*Float_to_Char_array(yaw, yaw_type);
 						Uart_TransmitTxPack(txYaw, yaw_char, 2);
@@ -154,31 +160,35 @@ int main(void) {
 						Float_to_Char_array(pitch, pitch_type);
 						Uart_TransmitTxPack(txPitch, pitch_char, 2);*/
 
-						P2OUT &= ~BIT2; 							// Pin LOW
+
 
 						if (fabsf(yaw)>8) {
 							if (fabsf(pitch)<=3)
 								{
-									Uart_putchar(0xFF);
+									Start_UART_Transmission();
+									data = 0xFF;
 								}
 							else {
-									Uart_putchar(0xF0);
+							    Start_UART_Transmission();
+                                data = 0xF0;
+
 								}//(char)fabsf(yaw)
 							//Uart_putchar((char)fabsf(yaw));
 						}
 						else{
 							if (fabsf(pitch)<=3)
 							{
-								Uart_putchar(0xF5);
+							    Start_UART_Transmission();
+                                data = 0xF5;
 							}
 							else {
-								Uart_putchar(0xF0);
+							    Start_UART_Transmission();
+                                data = 0xF0;
 							}
 							//Uart_putchar((char)fabsf(yaw));
 						}
 
-						P2OUT |= BIT2; 							// Pin High
-
+						//Uart_putchar((int)fabsf(yaw));
 						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 						break;
 					case Reset:
@@ -252,10 +262,25 @@ int main(void) {
 		}
 
 */
+		//P2OUT |= BIT2;
 
 		_BIS_SR(LPM3_bits + GIE);
 
 	}
+}
+
+void Start_UART_Transmission(){
+    P2OUT &= ~BIT2;                             // Pin LOW
+    //_delay_cycles(30000);
+    //P2OUT |= BIT2;                            // Pin High
+    TA1R = 0;
+    TA1CCTL1 |= CCIE;                           // Enable interrupt
+    TA1CCTL2 |= CCIE;                           // Enable interrupt
+    TA1CCR0 =  1200;
+    TA1CCR1 =  1200;                     //  Load value to compare
+    TA1CCR2 =  1100;
+    TA1CTL = TASSEL_1 + MC_1;                   // ACLK + Up Mode
+
 }
 
 void Get_Fifo (int number_of_samples,int * destination){
@@ -1019,4 +1044,31 @@ void __attribute__ ((interrupt(TIMER0_A1_VECTOR))) Timer_A (void)
 	case 10:
 		break;                           // overflow not used
 	}
+}
+
+// Timer1_A1 Interrupt Vector (TAIV) handler
+#pragma vector=TIMER1_A1_VECTOR
+__interrupt void TIMER1_A1_ISR(void)
+{
+  switch(TA1IV)
+  {
+    case  0: break;                            // No interrupt
+    case  2: TA1CTL &= ~MC_1;                   // ACLK + Up Mode
+            TA1R = 0;
+            P2OUT |= BIT2;                          // Pin High
+             break;   // CCR1
+    case  4: //Uart_putchar(0x11);
+        Uart_putchar(data);
+        TA1CTL &= ~MC_1;                   // ACLK + Up Mode
+                    TA1R = 0;
+                    P2OUT |= BIT2;                          // Pin High
+
+        break; // CCR2
+    case  6: break;                          // reserved
+    case  8: break;                          // reserved
+    case 10: break;                          // reserved
+    case 12: break;                          // reserved
+    case 14: break;                          // overflow
+    default: break;
+  }
 }
