@@ -97,7 +97,17 @@ enum result_type{
 #define Fifo_Gyr_Data	0x08
 #define Fifo_Acc_Data	0x04
 
-int sensor = BMI160,status=FiFo_Empty,timer=0,timer_count=0,nomotion_gyro_counter=0,X_Calibrate=0, Y_Calibrate=2,Z_Calibrate=4,gyro_status=Gyro_sleep,data=0;
+#define Window_Opened   0xFF
+#define Window_Tilted   0xF0
+#define Window_Closed   0xF5
+#define Window_Burglar  0xF9
+
+#define Open_Threshold  0x08
+#define Tilt_Threshold  0x03
+#define Responded       0x01
+#define Should_Respond  0x00
+
+int sensor = BMI160,status=FiFo_Empty,timer=0,timer_count=0,nomotion_gyro_counter=0,X_Calibrate=0, Y_Calibrate=2,Z_Calibrate=4,gyro_status=Gyro_sleep,data=0,fast_response=0;
 int accelorameter_raw[3];
 int gyroscope_raw[3];
 int magnetometer_raw[3];

@@ -15,6 +15,8 @@ int main(void) {
 	const float alpha = 0.5;
 	const float OneeightyDivPi = 180.0/M_PI;
 
+
+
 	Init();											//Initialize MSP430G2
 
 	Init_BMI160();									//Initialize BMI160
@@ -69,15 +71,32 @@ int main(void) {
 		//printf("Test" + whoami);
 		switch (status){
 					case FiFo_WM:
+
+					    if(fabsf(yaw)>=Open_Threshold && fast_response==Should_Respond){
+                            Start_UART_Transmission();
+                            if (fabsf(pitch)<=Tilt_Threshold)
+                            {
+                                data = Window_Opened;
+                                fast_response=Responded;
+                            }
+                            else {
+                                data = Window_Tilted;
+                                fast_response=Responded;
+                            }
+                        }
 						gyro_status=Gyro_active;
 						Get_Fifo(12,gyroscope_raw);
+
 
 
 
 						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x99);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 						//Float_to_Char_array(yaw, yaw_type);
 						//Uart_TransmitTxPack(txYaw, yaw_char, 2);
-						status = FiFo_Empty;
+						if(status!=Reset){
+						    status = FiFo_Empty;
+						}
+
 						break;
 					case FiFo_Empty:
 						//Read_Accelorameter(accelorameter_raw);
@@ -114,11 +133,12 @@ int main(void) {
 							if (fabsf(pitch)<=3)
 							{
 							    Start_UART_Transmission();
-							    data = 0xF5;
+							    data = Window_Closed;
+							    fast_response=Should_Respond;
 							}
 							else {
 							    Start_UART_Transmission();
-							    data = 0xF0;
+							    data = Window_Tilted;
 							}
 							//Uart_putchar((char)fabsf(yaw));
 						}
@@ -126,11 +146,11 @@ int main(void) {
 							if (fabsf(pitch)<=3)
 								{
 							    Start_UART_Transmission();
-							    data = 0xFF;
+							    data = Window_Opened;
 								}
 							else {
 							    Start_UART_Transmission();
-							    data = 0xF0;
+							    data = Window_Tilted;
 								} //(char)fabsf(yaw)
 							//Uart_putchar((char)fabsf(yaw));
 						}
@@ -166,11 +186,11 @@ int main(void) {
 							if (fabsf(pitch)<=3)
 								{
 									Start_UART_Transmission();
-									data = 0xFF;
+									data = Window_Opened;
 								}
 							else {
 							    Start_UART_Transmission();
-                                data = 0xF0;
+                                data = Window_Tilted;
 
 								}//(char)fabsf(yaw)
 							//Uart_putchar((char)fabsf(yaw));
@@ -179,11 +199,12 @@ int main(void) {
 							if (fabsf(pitch)<=3)
 							{
 							    Start_UART_Transmission();
-                                data = 0xF5;
+                                data = Window_Closed;
+                                fast_response=Should_Respond;
 							}
 							else {
 							    Start_UART_Transmission();
-                                data = 0xF0;
+                                data = Window_Tilted;
 							}
 							//Uart_putchar((char)fabsf(yaw));
 						}
@@ -192,12 +213,15 @@ int main(void) {
 						SPI_Write(BMI160_AG, BMI160_USER_ACCEL_CONFIG_ADDR, 0x97);//ACC LP Mode US=1, BWP=AVGus =1 , ODR = 50 Hz
 						break;
 					case Reset:
-						__disable_interrupt();
+
 						yaw=0;
 						pitch=0;
 						Init_BMI160();
 						status = FiFo_Empty;
 						__enable_interrupt();
+						Start_UART_Transmission();
+                        data = Window_Closed;
+
 						break;
 					default:
 						break;
@@ -278,7 +302,7 @@ void Start_UART_Transmission(){
     TA1CCTL2 |= CCIE;                           // Enable interrupt
     TA1CCR0 =  1200;
     TA1CCR1 =  1200;                     //  Load value to compare
-    TA1CCR2 =  1100;
+    TA1CCR2 =  250;
     TA1CTL = TASSEL_1 + MC_1;                   // ACLK + Up Mode
 
 }
@@ -936,6 +960,7 @@ __interrupt void Port_2(void) {
 
 	//SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR);
 
+	if(status!=Reset){
 	status = FiFo_WM;
 
 
@@ -947,7 +972,7 @@ __interrupt void Port_2(void) {
 	CCR0 = 1000;
 	CCR1 = 1000;
 	TACTL = TASSEL_1 + MC_1;         		       		// ACLK + Up Mode
-
+	}
 
 	P2IFG &= ~BIT1;				//Clear Interrupt Flag FifO
 
@@ -960,8 +985,16 @@ __interrupt void USCI0RX_ISR(void) {
 	rx_REC = UCA0RXBUF;
 	if (rx_REC == 0x1A)
 		{
-			status = Reset;
+	    __disable_interrupt();
+	    TA0IV=0;
+	    TACTL &= ~MC_1;
+        TAR = 0;
+        status = Reset;
+        LPM3_EXIT;
 		}
+	else if(rx_REC == 0x11){
+	    Uart_putchar(data);
+	}
 
 /*	rx_REC = UCA0RXBUF;
 	switch (rx_State) {
@@ -994,7 +1027,7 @@ __interrupt void USCI0RX_ISR(void) {
 		}
 		break;
 	}*/
-	LPM3_EXIT;
+
 }
 
 // Timer_A3 Interrupt Vector (TA0IV) handler
@@ -1021,10 +1054,10 @@ void __attribute__ ((interrupt(TIMER0_A1_VECTOR))) Timer_A (void)
 			//Get_Fifo(((int)(SPI_Read(BMI160_AG, BMI160_USER_FIFO_LENGTH_0_ADDR))/6),gyroscope_raw);
 
 			//If high_g had occured reset yaw if in closing position
-			if (timer==1) {
+			if (timer==1 && status!=Reset) {
 				status = High_G;
 			}
-			else{
+			else if (status!=Reset){
 				status = No_High_G;
 			}
 			timer=0;
@@ -1058,7 +1091,7 @@ __interrupt void TIMER1_A1_ISR(void)
             P2OUT |= BIT2;                          // Pin High
              break;   // CCR1
     case  4: //Uart_putchar(0x11);
-        Uart_putchar(data);
+        //Uart_putchar(data);
         TA1CTL &= ~MC_1;                   // ACLK + Up Mode
                     TA1R = 0;
                     P2OUT |= BIT2;                          // Pin High
